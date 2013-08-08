@@ -1,0 +1,32 @@
+{
+  "name": "uP",
+  "version": "0.1.0",
+  "description": "A+ micro promise - smaller promises are easier to keep",
+  "keywords": [
+    "promise",
+    "component"
+  ],
+  "author": { 
+    "name": "Kaerus",
+    "email": "contact@kaerus.com",
+    "web": "http://kaerus.com"
+  },
+  "contributors": [
+    "anders elo <anders@kaerus.com>"
+  ],
+  "devDependencies": {
+    "promises-aplus-tests":">=1.0.0"
+  },
+  "bugs": {
+    "url": "https://github.com/kaerus-component/uP/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/kaerus-component/uP"
+  },
+  "scripts": {
+    "test":"make test"
+  },
+  "main": "index.js",
+  "license": "APACHE2_0"
+}

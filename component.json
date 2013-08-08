@@ -1,0 +1,8 @@
+{
+  "name": "uP",
+  "version": "0.1.0",
+  "repo": "kaerus-component/uP",
+  "description": "A+ micro promises - smaller promises are easier to keep",
+  "scripts": ["index.js"],
+  "license": "Apache2_0"
+}
