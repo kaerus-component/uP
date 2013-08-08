@@ -4,7 +4,129 @@
 </a>
 [![Build Status](https://travis-ci.org/kaerus-component/uP.png)](https://travis-ci.org/kaerus-component/uP)
 
-uP
-==
 
-A+ micro promises - smaller promises are easier to keep
+
+<!-- Start index.js -->
+
+## uP
+
+Provides A+ compliant promises with some extras.   
+
+## uP({Object})
+
+@class  uP
+
+### Params: 
+
+* **o** *{Object}* object to mixin
+
+### Return:
+
+* **Object** with promise features
+
+## async
+
+@method  async 
+
+### Params: 
+
+* **func** *{Function}* alias for setImmediate 
+
+### Return:
+
+* **String** 
+
+## then({Function}, {Function})
+
+@method  then 
+
+### Params: 
+
+* **onFulfill** *{Function}* callback
+
+* **onReject** *{Function}* errback 
+
+### Return:
+
+* **Object** promise
+
+## fulfill({Object})
+
+@method  fulfill 
+
+### Params: 
+
+* **value** *{Object}* fulfillment value 
+
+### Return:
+
+* **Object** promise
+
+## reject({Object})
+
+@method  reject 
+
+### Params: 
+
+* **reason** *{Object}* rejection reason 
+
+### Return:
+
+* **Object** promise
+
+## resolved()
+
+@method  resolved  
+
+### Return:
+
+* **Object** resolved value or rejected reason
+
+## status()
+
+@method  status  
+
+### Return:
+
+* **String** state 'pending','fulfilled','rejected'
+
+## defer({Function})
+
+@method  defer 
+
+### Params: 
+
+* **proc** *{Function}* defer execution 
+
+### Return:
+
+* **Object** promise
+
+## spread({Function}, {Function})
+
+@method  spread 
+
+### Params: 
+
+* **onFulfill** *{Function}* callback with multiple arguments
+
+* **onReject** *{Function}* errback with multiple arguments 
+
+### Return:
+
+* **Object** promise
+
+## timeout({Number})
+
+@method  timeout 
+
+### Params: 
+
+* **time** *{Number}* timeout value in ms or null to clear timer
+
+### Return:
+
+* **Object** promise
+
+<!-- End index.js -->
+

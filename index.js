@@ -1,3 +1,9 @@
+ /**      
+ * Provides A+ compliant promises with some extras.   
+ * @module uP
+ * @name uP
+ * @main uP
+ */
 var G;
 
 try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
@@ -5,79 +11,202 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
 (function(){
 	"use strict";
 
-	var sI = G.setImmediate;
+	var M, P, sI = G.setImmediate;
 
 	if(!sI){
-	    if(G.process && typeof G.process.nextTick === 'function') {
-	        sI = G.process.nextTick;
-	    } else if(G.setTimeout) {
-	        sI = G.setTimeout;
-	    } else throw new Error("No candidate for setImmediate");  
-	}
+        if((P = G.process) && typeof P.nextTick === 'function') sI = P.nextTick;
+        else sI = G.setTimeout; 
+    }
 
-	function uP(o){
-		o = o ? o : {};
+    /**
+     * @class  uP
+     * @constructor
+     * @static
+     * @param o {Object} object to mixin
+     * @return {Object} with promise features
+     * @api public
+     */
+    function uP(o){
+        o = o ? o : {};
 
-		var state = 0, value = undefined, handlers = [];
+        var states = ['pending','fulfilled','rejected'],
+            state = 0, 
+            value,
+            timer, 
+            tuple = [];
 
-		o.then = function(f,r){
-			var p = uP();
+        /**
+         * @method  async 
+         * @param func {Function} alias for setImmediate 
+         * @return {String}
+         * @api public
+         */
+        o.async = sI;
 
-			handlers.push([p,f,r]);
-			
-			if(state) sI(function(){ resolve() });
+        /**
+         * @method  then 
+         * @param onFulfill {Function} callback
+         * @param onReject {Function} errback 
+         * @return {Object} promise
+         * @api public
+         */
+        o.then = function(f,r){
+            var p = uP();
 
-			return p;
-		}
+            tuple.push([p,f,r]);
 
-		o.fulfill = function(x){
-			if(state) return;
+            if(state) o.async(function(){ resolve() });
 
-	    	state = 1;
-	    	value = x;
+            return p;
+        }
 
-	    	resolve();
-		}
+        /**
+         * @method  fulfill 
+         * @param value {Object} fulfillment value 
+         * @return {Object} promise
+         * @api public
+         */
+        o.fulfill = function(x){
+            if(!state){
 
-		o.reject = function(x){
-			if(state) return;
+                state = 1;
+                value = x;
 
-			state = 2;
-			value = x;
+                resolve();
+            }
 
-			resolve();
-		}
+            return o;    
+        }
 
-		function resolve(){
-			var t, p, v, h;
-			
-			v = value;
-	    	
-	    	while(t = handlers.shift()) {
-	        	p = t[0];
-	        	h = t[state];
+        /**
+         * @method  reject 
+         * @param reason {Object} rejection reason 
+         * @return {Object} promise
+         * @api public
+         */
+        o.reject = function(x){
+            if(!state){
 
-	        	if(typeof h === 'function') {
-	            	try {
-	                	v = h.call(p,value);  
-	            	} catch(e) {
-	                	p.reject(e); 
-	            	}  
+                state = 2;
+                value = x;
 
-	            	if(v && typeof v.then === 'function')
-	            		v.then(p.fulfill,p.reject);
-	            	else p.fulfill(v);   
-	        	} else {
-	            	if(state == 1) p.fulfill(v);
-	            	else p.reject(v);
-	        	}
-	    	}
-		}
+                resolve();
+            }
 
-		return o;
-	}
+            return o;    
+        }
 
-	if (module && module.exports) module.exports = uP;
-	else G.uP = uP;
+        /**
+         * @method  resolved  
+         * @return {Object} resolved value or rejected reason
+         * @api public
+         */
+        o.resolved = function(){
+            return value;
+        }
 
+        /**
+         * @method  status  
+         * @return {String} state 'pending','fulfilled','rejected'
+         * @api public
+         */
+        o.status = function(){
+            return states[state];
+        }
+
+        /**
+         * @method  defer 
+         * @param proc {Function} defer execution   
+         * @return {Object} promise
+         * @api public
+         */
+        o.defer = function(proc){
+            var v;
+
+            o.async(function(){
+                try {
+                    v = proc.call(o);
+                    if(isP(v)) v.then(o.fulfill,o.reject);
+                    else o.fulfill(v);
+                } catch (e) {
+                    o.reject(e);
+                }
+            });
+
+            return o;
+        }
+
+        /**
+         * @method  spread 
+         * @param onFulfill {Function} callback with multiple arguments
+         * @param onReject {Function} errback with multiple arguments  
+         * @return {Object} promise
+         * @api public
+         */
+        o.spread = function(f,r){	
+            function s(h){
+                return function(v){
+                    if(!Array.isArray(v)) v = [v];
+                    return h.apply(null,v);	
+                }
+            }
+
+            return o.then(s(f),s(r));
+        }
+
+        /**
+         * @method  timeout 
+         * @param time {Number} timeout value in ms or null to clear timer
+         * @throws {RangeError} exceeded timeout  
+         * @return {Object} promise
+         * @api public
+         */
+        o.timeout = function(t){
+            if(t === null || state) {
+                G.clearTimeout(timer);
+                timer = null;
+            } else if(!timer){
+                timer = G.setTimeout(function(){
+                    o.reject(RangeError("exceeded timeout"));
+                },t);
+            }       
+
+            return o;
+        }
+
+        function resolve(){
+            var t, p, v, h;
+
+            v = value;
+
+            while(t = tuple.shift()) {
+                p = t[0];
+                h = t[state];
+
+                if(typeof h === 'function') {
+                    try {
+                        v = h.call(p,value);  
+                    } catch(e) {
+                        p.reject(e); 
+                    }  
+
+                    if(isP(v))
+                        v.then(p.fulfill,p.reject);
+                    else p.fulfill(v);   
+                } else {
+                    if(state == 1) p.fulfill(v);
+                    else p.reject(v);
+                }
+            }
+        }
+
+        function isP(f){
+            return f && typeof f.then === 'function';
+        }
+
+        return o;
+    }
+
+    if ((M = module) && M.exports) M.exports = uP;
+    else G.uP = uP;
 })();
