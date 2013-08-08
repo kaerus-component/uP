@@ -5,7 +5,6 @@
 [![Build Status](https://travis-ci.org/kaerus-component/uP.png)](https://travis-ci.org/kaerus-component/uP)
 
 
-
 <!-- Start index.js -->
 
 ## uP
@@ -116,7 +115,7 @@ Provides A+ compliant promises with some extras.
 
 * **Object** promise
 
-## timeout({Number})
+## timeout({Number}, {Function})
 
 @method  timeout 
 
@@ -124,9 +123,12 @@ Provides A+ compliant promises with some extras.
 
 * **time** *{Number}* timeout value in ms or null to clear timer
 
+* **func** *{Function}* timeout callback
+
 ### Return:
 
 * **Object** promise
 
 <!-- End index.js -->
+
 

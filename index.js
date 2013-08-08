@@ -11,11 +11,11 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
 (function(){
 	"use strict";
 
-	var M, P, sI = G.setImmediate;
+	var sI = G.setImmediate;
 
 	if(!sI){
-        if((P = G.process) && typeof P.nextTick === 'function') sI = P.nextTick;
-        else sI = G.setTimeout; 
+        if(G.process && typeof G.process.nextTick === 'function') sI = G.process.nextTick;
+        else sI = setTimeout; 
     }
 
     /**
@@ -75,7 +75,7 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
                 resolve();
             }
 
-            return o;    
+            return this;    
         }
 
         /**
@@ -93,7 +93,7 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
                 resolve();
             }
 
-            return o;    
+            return this;    
         }
 
         /**
@@ -133,7 +133,7 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
                 }
             });
 
-            return o;
+            return this;
         }
 
         /**
@@ -151,27 +151,27 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
                 }
             }
 
-            return o.then(s(f),s(r));
+            return this.then(s(f),s(r));
         }
 
         /**
          * @method  timeout 
          * @param time {Number} timeout value in ms or null to clear timer
+         * @param func {Function} timeout callback
          * @throws {RangeError} exceeded timeout  
          * @return {Object} promise
          * @api public
          */
-        o.timeout = function(t){
+        o.timeout = function(t,f){
             if(t === null || state) {
-                G.clearTimeout(timer);
+                clearTimeout(timer);
                 timer = null;
             } else if(!timer){
-                timer = G.setTimeout(function(){
-                    o.reject(RangeError("exceeded timeout"));
-                },t);
+                f = f ? f : function(){o.reject(RangeError("exceeded timeout"));}
+                timer = setTimeout(f,t);
             }       
 
-            return o;
+            return this;
         }
 
         function resolve(){
@@ -207,6 +207,6 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
         return o;
     }
 
-    if ((M = module) && M.exports) M.exports = uP;
+    if (module && module.exports) module.exports = uP;
     else G.uP = uP;
 })();
