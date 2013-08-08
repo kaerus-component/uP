@@ -5,19 +5,21 @@
 [![Build Status](https://travis-ci.org/kaerus-component/uP.png)](https://travis-ci.org/kaerus-component/uP)
 
 
+
+
 <!-- Start index.js -->
 
-## uP
+## micro Promise
 
 Provides A+ compliant promises with some extras.   
 
-## uP({Object})
+## uP(object)
 
-@class  uP
+@class uP
 
 ### Params: 
 
-* **o** *{Object}* object to mixin
+* **Object** *object* to mixin
 
 ### Return:
 
@@ -25,49 +27,45 @@ Provides A+ compliant promises with some extras.
 
 ## async
 
-@method  async 
+@method async 
 
 ### Params: 
 
-* **func** *{Function}* alias for setImmediate 
+* **Function** *func* alias for setImmediate 
 
-### Return:
-
-* **String** 
-
-## then({Function}, {Function})
+## then(onFulfill, onReject)
 
 @method  then 
 
 ### Params: 
 
-* **onFulfill** *{Function}* callback
+* **Function** *onFulfill* callback
 
-* **onReject** *{Function}* errback 
-
-### Return:
-
-* **Object** promise
-
-## fulfill({Object})
-
-@method  fulfill 
-
-### Params: 
-
-* **value** *{Object}* fulfillment value 
+* **Function** *onReject* errback 
 
 ### Return:
 
 * **Object** promise
 
-## reject({Object})
+## fulfill(value)
 
-@method  reject 
+@method fulfill 
 
 ### Params: 
 
-* **reason** *{Object}* rejection reason 
+* **Object** *value* fullfillment value
+
+### Return:
+
+* **Object** promise
+
+## reject(reason)
+
+@method reject 
+
+### Params: 
+
+* **Object** *reason* rejection value 
 
 ### Return:
 
@@ -75,60 +73,58 @@ Provides A+ compliant promises with some extras.
 
 ## resolved()
 
-@method  resolved  
+@method resolved  
 
 ### Return:
 
-* **Object** resolved value or rejected reason
+* **Object** resolved value
 
 ## status()
 
-@method  status  
+@method status  
 
 ### Return:
 
-* **String** state 'pending','fulfilled','rejected'
+* **String** 'pending','fulfilled','rejected'
 
-## defer({Function})
+## defer(proc)
 
-@method  defer 
-
-### Params: 
-
-* **proc** *{Function}* defer execution 
-
-### Return:
-
-* **Object** promise
-
-## spread({Function}, {Function})
-
-@method  spread 
+@method defer 
 
 ### Params: 
 
-* **onFulfill** *{Function}* callback with multiple arguments
-
-* **onReject** *{Function}* errback with multiple arguments 
+* **Function** *proc* defers process execution 
 
 ### Return:
 
 * **Object** promise
 
-## timeout({Number}, {Function})
+## spread(onFulfill, onReject)
 
-@method  timeout 
+@method spread 
 
 ### Params: 
 
-* **time** *{Number}* timeout value in ms or null to clear timer
+* **Function** *onFulfill* callback with multiple arguments
 
-* **func** *{Function}* timeout callback
+* **Function** *onReject* errback with multiple arguments 
+
+### Return:
+
+* **Object** promise
+
+## timeout(time, callback)
+
+@method timeout 
+
+### Params: 
+
+* **Number** *time* timeout value in ms or null to clear timeout
+
+* **Function** *callback* timeout function callback
 
 ### Return:
 
 * **Object** promise
 
 <!-- End index.js -->
-
-

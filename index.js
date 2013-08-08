@@ -1,7 +1,7 @@
  /**      
  * Provides A+ compliant promises with some extras.   
  * @module uP
- * @name uP
+ * @name microPromise
  * @main uP
  */
 var G;
@@ -19,10 +19,10 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
     }
 
     /**
-     * @class  uP
+     * @class uP
      * @constructor
      * @static
-     * @param o {Object} object to mixin
+     * @param {Object} object to mixin
      * @return {Object} with promise features
      * @api public
      */
@@ -36,17 +36,16 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
             tuple = [];
 
         /**
-         * @method  async 
-         * @param func {Function} alias for setImmediate 
-         * @return {String}
+         * @method async 
+         * @param {Function} func alias for setImmediate 
          * @api public
          */
         o.async = sI;
 
         /**
          * @method  then 
-         * @param onFulfill {Function} callback
-         * @param onReject {Function} errback 
+         * @param {Function} onFulfill callback
+         * @param {Function} onReject errback 
          * @return {Object} promise
          * @api public
          */
@@ -61,8 +60,8 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
         }
 
         /**
-         * @method  fulfill 
-         * @param value {Object} fulfillment value 
+         * @method fulfill 
+         * @param {Object} value fullfillment value
          * @return {Object} promise
          * @api public
          */
@@ -79,8 +78,8 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
         }
 
         /**
-         * @method  reject 
-         * @param reason {Object} rejection reason 
+         * @method reject 
+         * @param {Object} reason rejection value 
          * @return {Object} promise
          * @api public
          */
@@ -97,8 +96,8 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
         }
 
         /**
-         * @method  resolved  
-         * @return {Object} resolved value or rejected reason
+         * @method resolved  
+         * @return {Object} resolved value
          * @api public
          */
         o.resolved = function(){
@@ -106,8 +105,8 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
         }
 
         /**
-         * @method  status  
-         * @return {String} state 'pending','fulfilled','rejected'
+         * @method status  
+         * @return {String} 'pending','fulfilled','rejected'
          * @api public
          */
         o.status = function(){
@@ -115,8 +114,8 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
         }
 
         /**
-         * @method  defer 
-         * @param proc {Function} defer execution   
+         * @method defer 
+         * @param {Function} proc defers process execution   
          * @return {Object} promise
          * @api public
          */
@@ -137,9 +136,9 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
         }
 
         /**
-         * @method  spread 
-         * @param onFulfill {Function} callback with multiple arguments
-         * @param onReject {Function} errback with multiple arguments  
+         * @method spread 
+         * @param {Function} onFulfill callback with multiple arguments
+         * @param {Function} onReject errback with multiple arguments  
          * @return {Object} promise
          * @api public
          */
@@ -155,10 +154,10 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
         }
 
         /**
-         * @method  timeout 
-         * @param time {Number} timeout value in ms or null to clear timer
-         * @param func {Function} timeout callback
-         * @throws {RangeError} exceeded timeout  
+         * @method timeout 
+         * @param {Number} time timeout value in ms or null to clear timeout
+         * @param {Function} callback timeout function callback
+         * @throws {RangeError} If exceeded timeout  
          * @return {Object} promise
          * @api public
          */
