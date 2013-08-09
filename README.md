@@ -7,22 +7,16 @@
 # microPromises
 
 #API
-   - [uP()](#up)
-  - [Examples:](#examples)
+  - [uP()](#up)
   - [o.then()](#othenonfulfillfunctiononrejectfunction)
-  - [Examples:](#examples)
   - [o.fulfill()](#ofulfillvalueobject)
   - [o.reject()](#orejectreasonobject)
   - [o.resolved()](#oresolved)
   - [o.status()](#ostatus)
   - [o.async()](#oasyncprocfunctionargs)
-  - [Example:](#example)
   - [o.async2()](#oasync2)
-  - [Example:](#example)
   - [o.join()](#ojoin)
-  - [Example:](#example)
   - [o.spread()](#ospreadonfulfillfunctiononrejectfunction)
-  - [Example:](#example)
   - [o.timeout()](#otimeouttimenumbercallbackfunction)
 
 ## uP()
@@ -80,7 +74,7 @@
    // chainable then clauses
    p.then(function(v){
        console.log('v is:', v);
-       if(v > 10) throw new RangeError('to large!'');
+       if(v > 10) throw new RangeError('to large!');
        return v*2;
    }).then(function(v){ 
        // gets v*2 from above
