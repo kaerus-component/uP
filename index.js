@@ -10,12 +10,17 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
 
 (function(){
 	"use strict";
+ 
+	var task = G.setImmediate; // for non-blocking tasks
 
-	var sI = G.setImmediate;
-
-	if(!sI){
-        if(G.process && typeof G.process.nextTick === 'function') sI = G.process.nextTick;
-        else sI = setTimeout; 
+	if(!task){
+        if(G.process && typeof G.process.nextTick === 'function') task = G.process.nextTick;
+        else if(G.vertx && typeof G.vertx.runOnLoop === 'function') task = G.vertx.RunOnLoop;
+        else if (G.MessageChannel && typeof G.MessageChannel === "function") {
+            var fifo = [], channel = new G.MessageChannel();
+            channel.port1.onmessage = function () { (fifo.shift())() };
+            task = function (f){ fifo[fifo.length] = f; channel.port2.postMessage(); };
+        } else task = function(f){ G.setTimeout(f,0) }; 
     }
 
     /**
@@ -36,13 +41,6 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
             tuple = [];
 
         /**
-         * @method async 
-         * @param {Function} func alias for setImmediate 
-         * @api public
-         */
-        o.async = sI;
-
-        /**
          * @method  then 
          * @param {Function} onFulfill callback
          * @param {Function} onReject errback 
@@ -54,7 +52,7 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
 
             tuple.push([p,f,r]);
 
-            if(state) o.async(function(){ resolve() });
+            if(state) task( resolve );
 
             return p;
         }
@@ -125,7 +123,7 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
             o.async(function(){
                 try {
                     v = proc.call(o);
-                    if(isP(v)) v.then(o.fulfill,o.reject);
+                    if(isPromise(v)) v.then(o.fulfill,o.reject);
                     else o.fulfill(v);
                 } catch (e) {
                     o.reject(e);
@@ -162,12 +160,14 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
          * @api public
          */
         o.timeout = function(t,f){
+            var self = this;
+
             if(t === null || state) {
                 clearTimeout(timer);
                 timer = null;
             } else if(!timer){
-                f = f ? f : function(){o.reject(RangeError("exceeded timeout"));}
-                timer = setTimeout(f,t);
+                f = f ? f : function(){ self.reject(RangeError("exceeded timeout")) }
+                timer = G.setTimeout(f,t);
             }       
 
             return this;
@@ -189,8 +189,7 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
                         p.reject(e); 
                     }  
 
-                    if(isP(v))
-                        v.then(p.fulfill,p.reject);
+                    if(isPromise(v)) v.then(p.fulfill,p.reject);
                     else p.fulfill(v);   
                 } else {
                     if(state == 1) p.fulfill(v);
@@ -199,13 +198,14 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
             }
         }
 
-        function isP(f){
+        function isPromise(f){
             return f && typeof f.then === 'function';
         }
 
         return o;
     }
 
-    if (module && module.exports) module.exports = uP;
+    if(module && module.exports) module.exports = uP;
+    else if(typeof define ==='function' && define.amd) define(uP); 
     else G.uP = uP;
 })();
