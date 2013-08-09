@@ -25,6 +25,26 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
 
     /**
      * Initializes and returns a promise
+     * Provide an object to mixin the features or a resolver callback function.
+     *  
+     *  #### Examples:
+     *       // require uP
+     *       var uP = require('uP');
+     *
+     *       // get promise
+     *       var p = uP();
+     *
+     *       // initialize promise with object
+     *       var e = {x:42,test:function(){ this.fulfill(this.x) } };
+     *       var p = uP(e);
+     *       p.test();
+     *       p.resolved(); // => 42
+     *
+     *       // initialize promise with resolver
+     *       var r = function(r){ r.fulfill('hello') };
+     *       p = a(r);
+     *       p.resolved(); // => 'hello'
+     *
      * @constructor
      * @static
      * @param {Object} o mixin
@@ -42,6 +62,42 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
 
         /**
          * Attaches callback/errback handlers and returns a new promise 
+         * 
+         *  #### Examples:
+         *      // catch fulfillment or rejection
+         *      var p = uP();
+         *      p.then(function(value){
+         *          console.log("received:", value);
+         *      },function(error){
+         *          console.log("failed with:", error);
+         *      });
+         *      p.fulfill('hello world!'); // => 'received: hello world!'
+         *
+         *      // chainable then clauses
+         *      p.then(function(v){
+         *          console.log('v is:', v);
+         *          if(v > 10) throw new RangeError('to large!'');
+         *          return v*2;
+         *      }).then(function(v){ 
+         *          // gets v*2 from above
+         *          console.log('v is:', v)
+         *      },function(e){
+         *          console.log('error2:', e);
+         *      });
+         *      p.fulfill(142); // => v is: 142, error2: [RangeError:'to large']
+         *
+         *      // null callbacks are ignored
+         *      p.then(function(v){
+         *          if(v < 0) throw v;
+         *          return v;
+         *      }).then(null,function(e){
+         *          e = -e;
+         *          return e;
+         *      }).then(function(value){
+         *          console.log('we got:', value);
+         *      });
+         *      p.fulfill(-5); // => we got: 5
+         *      
          * @param {Function} onFulfill callback
          * @param {Function} onReject errback 
          * @return {Object} a decendant promise
@@ -112,29 +168,124 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
         }
 
         /**
-         * Defer a process which can return a promise 
-         * @param {Function} proc    
+         * Makes a process/function asynchronous.
+         * The process may also return a promise itself which to wait on.
+         * Note: if the process returns undefined the promise will remain pending.  
+         * 
+         * #### Example:
+         *      // make readFileSync async
+         *      fs = require('fs');
+         *      var asyncReadFile = p.async(fs.readFileSync,'./index.js');
+         *      asyncReadFile.then(function(data){
+         *          console.log(data.toString())
+         *      },function(error){
+         *          console.log("Read error:", error);
+         *      });
+         *      
+         * @param {Function} proc
+         * @param {...} args    
          * @return {Object} promise for chaining
          * @api public
          */
-        o.defer = function(proc){
-            var v;
+        o.async = function(){
+            var self = this,
+                args = Array.prototype.slice.call(arguments),
+                proc = args.shift(),
+                ret;
 
-            o.task(function(){
+            task(function(){
                 try {
-                    v = proc.call(o);
-                    if(isPromise(v)) v.then(o.fulfill,o.reject);
-                    else o.fulfill(v);
+                    ret = proc.apply(null,args);
+                    if(isPromise(ret)) ret.then(self.fulfill,self.reject);
+                    else if(ret !== undefined) self.fulfill(ret);
                 } catch (e) {
-                    o.reject(e);
+                    self.reject(e);
                 }
             });
 
             return this;
         }
+        /**
+         * Adapted for processes using a callback(err,ret). 
+         * 
+         * #### Example:
+         *      // make readFile async
+         *      fs = require('fs');
+         *      var asyncReadFile = p.async2(fs.readFile,'./index.js');
+         *      asyncReadFile.then(function(data){
+         *          console.log(data.toString())
+         *      },function(error){
+         *          console.log("Read error:", error);
+         *      });
+         *         
+         * @return {Object} promise for chaining
+         * @api public
+         */
+        o.async2 = function(){
+            var self = this,
+                args = Array.prototype.slice.call(arguments);
+
+            function callback(err,ret){ if(!e) self.fulfill(ret); else self.reject(ret); }
+
+            args[args.length] = callback;
+
+            return this.async.apply(this,args);
+        }
 
         /**
-         * Spread can be use instead of then() to get multiple arguments if fulfillment/rejected value is an array 
+         * Joins promises and assembles return values into an array.
+         * If any of the promises rejects the rejection handler is called with the error.  
+         * 
+         * #### Example:
+         *      // join two promises
+         *      p = uP();
+         *      a = uP();
+         *      b = uP();
+         *      p.join([a,b]).spread(function(x,y){
+         *          console.log('a=%s, b=%s',x,y);
+         *      },function(err){
+         *          console.log('error=',e);
+         *      });
+         *      b.fulfill('hello');
+         *      a.fulfill('world'); // => 'a=hello, b=world' 
+         *      p.resolved(); // => ['hello','world']
+         *              
+         * @return {Object} promise for chaining
+         * @api public
+         */
+        o.join = function(promises){
+            var val = [], 
+                self = this, 
+                chain = uP().fulfill();
+
+            if(!Array.isArray(promises)) promises = [promises];
+
+            function collect(i){
+                promises[i].then(function(v){
+                    val[i] = v;
+                });
+
+                return function(){return promises[i]}    
+            }
+
+            for(var i = 0, l = promises.length; i < l; i++){
+                chain = chain.then(collect(i));
+            }
+
+            chain.then(function(){self.fulfill(val)},function(e){self.reject(e)});
+
+            return this;
+        }
+
+        /**
+         * Spread has the same semantic as then() but splits multiple fulfillment values & rejection reasons into separate arguments  
+         * 
+         * #### Example:
+         *      var p = uP();
+         *      p.fulfill([1,2,3]).spread(function(a,b,c){
+         *          console.log(a,b,c); // => 123
+         *      });     
+         *      
          * @param {Function} onFulfill callback with multiple arguments
          * @param {Function} onReject errback with multiple arguments  
          * @return {Object} promise for chaining
@@ -152,7 +303,8 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
         }
 
         /**
-         * Timeout a pending promise and invoke callback function on timeout
+         * Timeout a pending promise and invoke callback function on timeout.
+         * Without a callback it throws a RangeError('exceeded timeout').
          * @param {Number} time timeout value in ms or null to clear timeout
          * @param {Function} callback optional timeout function callback
          * @throws {RangeError} If exceeded timeout  
@@ -201,6 +353,8 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
         function isPromise(f){
             return f && typeof f.then === 'function';
         }
+
+        if(typeof o === 'function') o.call(null,o);
 
         return o;
     }
