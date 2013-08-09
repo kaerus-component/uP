@@ -4,127 +4,52 @@
 </a>
 [![Build Status](https://travis-ci.org/kaerus-component/uP.png)](https://travis-ci.org/kaerus-component/uP)
 
+# microPromises
 
+#API
+  - [uP()](#up)
+  - [o.then()](#othenonfulfillfunctiononrejectfunction)
+  - [o.fulfill()](#ofulfillvalueobject)
+  - [o.reject()](#orejectreasonobject)
+  - [o.resolved()](#oresolved)
+  - [o.status()](#ostatus)
+  - [o.defer()](#odeferprocfunction)
+  - [o.spread()](#ospreadonfulfillfunctiononrejectfunction)
+  - [o.timeout()](#otimeouttimenumbercallbackfunction)
 
+## uP(o:Object)
 
-<!-- Start index.js -->
+  Initializes and returns a promise.
+  Provide an object to mixin the features.
 
-## micro Promise
+## o.then(onFulfill:Function, onReject:Function)
 
-Provides A+ compliant promises with some extras.   
+  Attaches callback/errback handlers and returns a new promise
 
-## uP(object)
+## o.fulfill(value:Object)
 
-@class uP
+  Fulfills a promise with a value
 
-### Params: 
+## o.reject(reason:Object)
 
-* **Object** *object* to mixin
+  Rejects promise with a reason
 
-### Return:
+## o.resolved()
 
-* **Object** with promise features
+  Returns the resolved value
 
-## async
+## o.status()
 
-@method async 
+  Return the current state
 
-### Params: 
+## o.defer(proc:Function)
 
-* **Function** *func* alias for setImmediate 
+  Defer a process which can return a promise
 
-## then(onFulfill, onReject)
+## o.spread(onFulfill:Function, onReject:Function)
 
-@method  then 
+  Spread can be use instead of then() to get multiple arguments if fulfillment/rejected value is an array
 
-### Params: 
+## o.timeout(time:Number, callback:Function)
 
-* **Function** *onFulfill* callback
-
-* **Function** *onReject* errback 
-
-### Return:
-
-* **Object** promise
-
-## fulfill(value)
-
-@method fulfill 
-
-### Params: 
-
-* **Object** *value* fullfillment value
-
-### Return:
-
-* **Object** promise
-
-## reject(reason)
-
-@method reject 
-
-### Params: 
-
-* **Object** *reason* rejection value 
-
-### Return:
-
-* **Object** promise
-
-## resolved()
-
-@method resolved  
-
-### Return:
-
-* **Object** resolved value
-
-## status()
-
-@method status  
-
-### Return:
-
-* **String** 'pending','fulfilled','rejected'
-
-## defer(proc)
-
-@method defer 
-
-### Params: 
-
-* **Function** *proc* defers process execution 
-
-### Return:
-
-* **Object** promise
-
-## spread(onFulfill, onReject)
-
-@method spread 
-
-### Params: 
-
-* **Function** *onFulfill* callback with multiple arguments
-
-* **Function** *onReject* errback with multiple arguments 
-
-### Return:
-
-* **Object** promise
-
-## timeout(time, callback)
-
-@method timeout 
-
-### Params: 
-
-* **Number** *time* timeout value in ms or null to clear timeout
-
-* **Function** *callback* timeout function callback
-
-### Return:
-
-* **Object** promise
-
-<!-- End index.js -->
+  Timeout a pending promise and invoke callback function on timeout. if no callback has been specified it throws a RangeError('exceeded timeout') exception error on timeout.

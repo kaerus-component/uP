@@ -24,10 +24,10 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
     }
 
     /**
-     * @class uP
+     * Initializes and returns a promise
      * @constructor
      * @static
-     * @param {Object} object to mixin
+     * @param {Object} o mixin
      * @return {Object} with promise features
      * @api public
      */
@@ -41,10 +41,10 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
             tuple = [];
 
         /**
-         * @method  then 
+         * Attaches callback/errback handlers and returns a new promise 
          * @param {Function} onFulfill callback
          * @param {Function} onReject errback 
-         * @return {Object} promise
+         * @return {Object} a decendant promise
          * @api public
          */
         o.then = function(f,r){
@@ -58,9 +58,9 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
         }
 
         /**
-         * @method fulfill 
-         * @param {Object} value fullfillment value
-         * @return {Object} promise
+         * Fulfills a promise with a value 
+         * @param {Object} value literal or object
+         * @return {Object} promise for chaining
          * @api public
          */
         o.fulfill = function(x){
@@ -76,9 +76,9 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
         }
 
         /**
-         * @method reject 
-         * @param {Object} reason rejection value 
-         * @return {Object} promise
+         * Rejects promise with a reason
+         * @param {Object} reason literal or object 
+         * @return {Object} promise for chaining
          * @api public
          */
         o.reject = function(x){
@@ -94,7 +94,7 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
         }
 
         /**
-         * @method resolved  
+         * Returns the resolved value  
          * @return {Object} resolved value
          * @api public
          */
@@ -103,7 +103,7 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
         }
 
         /**
-         * @method status  
+         * Return the current state  
          * @return {String} 'pending','fulfilled','rejected'
          * @api public
          */
@@ -112,15 +112,15 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
         }
 
         /**
-         * @method defer 
-         * @param {Function} proc defers process execution   
-         * @return {Object} promise
+         * Defer a process which can return a promise 
+         * @param {Function} proc    
+         * @return {Object} promise for chaining
          * @api public
          */
         o.defer = function(proc){
             var v;
 
-            o.async(function(){
+            o.task(function(){
                 try {
                     v = proc.call(o);
                     if(isPromise(v)) v.then(o.fulfill,o.reject);
@@ -134,10 +134,10 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
         }
 
         /**
-         * @method spread 
+         * Spread can be use instead of then() to get multiple arguments if fulfillment/rejected value is an array 
          * @param {Function} onFulfill callback with multiple arguments
          * @param {Function} onReject errback with multiple arguments  
-         * @return {Object} promise
+         * @return {Object} promise for chaining
          * @api public
          */
         o.spread = function(f,r){	
@@ -152,9 +152,9 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
         }
 
         /**
-         * @method timeout 
+         * Timeout a pending promise and invoke callback function on timeout
          * @param {Number} time timeout value in ms or null to clear timeout
-         * @param {Function} callback timeout function callback
+         * @param {Function} callback optional timeout function callback
          * @throws {RangeError} If exceeded timeout  
          * @return {Object} promise
          * @api public
