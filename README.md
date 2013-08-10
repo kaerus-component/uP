@@ -8,14 +8,13 @@
 A+ compliant promises
 
 #API
----
   - [uP()](#up)
   - [o.then()](#othenonfulfillfunctiononrejectfunction)
   - [o.fulfill()](#ofulfillvalueobject)
   - [o.reject()](#orejectreasonobject)
   - [o.resolved()](#oresolved)
   - [o.status()](#ostatus)
-  - [o.async()](#oasyncprocfunctionargs)
+  - [o.async()](#oasyncprocfunctionargsobject)
   - [o.async2()](#oasync2)
   - [o.join()](#ojoinpromisesarray)
   - [o.spread()](#ospreadonfulfillfunctiononrejectfunction)
@@ -26,19 +25,19 @@ A+ compliant promises
   Initializes and returns a promise
   Provide an object to mixin the features or a resolver callback function.
    
-  require uP:
+   Example: require uP
 ```js
     var uP = require('uP');
 ```
 
   
-  get a new promise:
+   Example: get a new promise
 ```js
     var p = uP();
 ```
 
   
-  initialize with object:
+   Example: initialize with object
 ```js
     var e = {x:42,test:function(){ this.fulfill(this.x) } };
     var p = uP(e);
@@ -47,7 +46,7 @@ A+ compliant promises
 ```
 
   
-  initialize with funtion:
+   Example: initialize with a function
 ```js
     var r = function(r){ r.fulfill('hello') };
     p = a(r);
@@ -58,7 +57,7 @@ A+ compliant promises
 
   Attaches callback/errback handlers and returns a new promise 
   
-  catch fulfillment or rejection:
+  Example: catch fulfillment or rejection
 ```js
    var p = uP();
    p.then(function(value){
@@ -70,7 +69,7 @@ A+ compliant promises
 ```
 
   
-  chainable then clauses:
+  Example: chainable then clauses
 ```js
    p.then(function(v){
        console.log('v is:', v);
@@ -86,7 +85,7 @@ A+ compliant promises
 ```
 
   
-  null callbacks are ignored:
+  Example: null callbacks are ignored
 ```js
    p.then(function(v){
        if(v < 0) throw v;
@@ -116,13 +115,13 @@ A+ compliant promises
 
   Returns the current `status`
 
-## o.async(proc:Function, args:...)
+## o.async(proc:Function, args:Object)
 
   Makes a process/function asynchronous.
   The process may also return a promise itself which to wait on.
   Note: if the process returns undefined the promise will remain pending.  
   
-  Make readFileSync async:
+  Example: Make readFileSync async
 ```js
    fs = require('fs');
    var asyncReadFile = p.async(fs.readFileSync,'./index.js');
@@ -137,7 +136,7 @@ A+ compliant promises
 
   Adapted for processes using a callback(err,ret). 
   
-  make readFile async:
+  Example: make readFile async
 ```js
    fs = require('fs');
    var asyncReadFile = p.async2(fs.readFile,'./index.js');
@@ -153,7 +152,7 @@ A+ compliant promises
   Joins promises and assembles return values into an array.
   If any of the promises rejects the rejection handler is called with the error.  
   
-  join two promises:
+  Example: join two promises
 ```js
    p = uP();
    a = uP();
@@ -172,7 +171,7 @@ A+ compliant promises
 
   Spread has the same semantic as then() but splits multiple fulfillment values & rejection reasons into separate arguments  
   
-  Fulfillment array elements as arguments:
+  Example: Fulfillment array elements as arguments
 ```js
    var p = uP();
    p.fulfill([1,2,3]).spread(function(a,b,c){
