@@ -5,8 +5,10 @@
 [![Build Status](https://travis-ci.org/kaerus-component/uP.png)](https://travis-ci.org/kaerus-component/uP)
 
 # microPromises
+A+ compliant promises
 
 #API
+---
   - [uP()](#up)
   - [o.then()](#othenonfulfillfunctiononrejectfunction)
   - [o.fulfill()](#ofulfillvalueobject)
@@ -15,7 +17,7 @@
   - [o.status()](#ostatus)
   - [o.async()](#oasyncprocfunctionargs)
   - [o.async2()](#oasync2)
-  - [o.join()](#ojoin)
+  - [o.join()](#ojoinpromisesarray)
   - [o.spread()](#ospreadonfulfillfunctiononrejectfunction)
   - [o.timeout()](#otimeouttimenumbercallbackfunction)
 
@@ -24,21 +26,20 @@
   Initializes and returns a promise
   Provide an object to mixin the features or a resolver callback function.
    
-### Examples:
+  require uP:
 ```js
-    // require uP
     var uP = require('uP');
 ```
 
   
+  get a new promise:
 ```js
-    // get promise
     var p = uP();
 ```
 
   
+  initialize with object:
 ```js
-    // initialize promise with object
     var e = {x:42,test:function(){ this.fulfill(this.x) } };
     var p = uP(e);
     p.test();
@@ -46,8 +47,8 @@
 ```
 
   
+  initialize with funtion:
 ```js
-    // initialize promise with resolver
     var r = function(r){ r.fulfill('hello') };
     p = a(r);
     p.resolved(); // => 'hello'
@@ -57,9 +58,8 @@
 
   Attaches callback/errback handlers and returns a new promise 
   
-### Examples:
+  catch fulfillment or rejection:
 ```js
-   // catch fulfillment or rejection
    var p = uP();
    p.then(function(value){
        console.log("received:", value);
@@ -70,8 +70,8 @@
 ```
 
   
+  chainable then clauses:
 ```js
-   // chainable then clauses
    p.then(function(v){
        console.log('v is:', v);
        if(v > 10) throw new RangeError('to large!');
@@ -86,8 +86,8 @@
 ```
 
   
+  null callbacks are ignored:
 ```js
-   // null callbacks are ignored
    p.then(function(v){
        if(v < 0) throw v;
        return v;
@@ -110,11 +110,11 @@
 
 ## o.resolved()
 
-  Returns the resolved value
+  Returns the resolved `value`
 
 ## o.status()
 
-  Return the current state
+  Returns the current `status`
 
 ## o.async(proc:Function, args:...)
 
@@ -122,9 +122,8 @@
   The process may also return a promise itself which to wait on.
   Note: if the process returns undefined the promise will remain pending.  
   
-### Example:
+  Make readFileSync async:
 ```js
-   // make readFileSync async
    fs = require('fs');
    var asyncReadFile = p.async(fs.readFileSync,'./index.js');
    asyncReadFile.then(function(data){
@@ -138,9 +137,8 @@
 
   Adapted for processes using a callback(err,ret). 
   
-### Example:
+  make readFile async:
 ```js
-   // make readFile async
    fs = require('fs');
    var asyncReadFile = p.async2(fs.readFile,'./index.js');
    asyncReadFile.then(function(data){
@@ -150,14 +148,13 @@
    });
 ```
 
-## o.join()
+## o.join(promises:Array)
 
   Joins promises and assembles return values into an array.
   If any of the promises rejects the rejection handler is called with the error.  
   
-### Example:
+  join two promises:
 ```js
-   // join two promises
    p = uP();
    a = uP();
    b = uP();
@@ -175,7 +172,7 @@
 
   Spread has the same semantic as then() but splits multiple fulfillment values & rejection reasons into separate arguments  
   
-### Example:
+  Fulfillment array elements as arguments:
 ```js
    var p = uP();
    p.fulfill([1,2,3]).spread(function(a,b,c){

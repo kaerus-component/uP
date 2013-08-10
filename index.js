@@ -27,28 +27,27 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
      * Initializes and returns a promise
      * Provide an object to mixin the features or a resolver callback function.
      *  
-     *  #### Examples:
-     *       // require uP
+     * require uP:
      *       var uP = require('uP');
      *
-     *       // get promise
+     * get a new promise:
      *       var p = uP();
      *
-     *       // initialize promise with object
+     * initialize with object:
      *       var e = {x:42,test:function(){ this.fulfill(this.x) } };
      *       var p = uP(e);
      *       p.test();
      *       p.resolved(); // => 42
      *
-     *       // initialize promise with resolver
+     * initialize with funtion:
      *       var r = function(r){ r.fulfill('hello') };
      *       p = a(r);
      *       p.resolved(); // => 'hello'
      *
      * @constructor
      * @static
-     * @param {Object} o mixin
-     * @return {Object} with promise features
+     * @param {Object} o
+     * @return {Object} promise
      * @api public
      */
     function uP(o){
@@ -63,8 +62,7 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
         /**
          * Attaches callback/errback handlers and returns a new promise 
          * 
-         *  #### Examples:
-         *      // catch fulfillment or rejection
+         * catch fulfillment or rejection:
          *      var p = uP();
          *      p.then(function(value){
          *          console.log("received:", value);
@@ -73,10 +71,10 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
          *      });
          *      p.fulfill('hello world!'); // => 'received: hello world!'
          *
-         *      // chainable then clauses
+         * chainable then clauses:
          *      p.then(function(v){
          *          console.log('v is:', v);
-         *          if(v > 10) throw new RangeError('to large!'');
+         *          if(v > 10) throw new RangeError('to large!');
          *          return v*2;
          *      }).then(function(v){ 
          *          // gets v*2 from above
@@ -86,7 +84,7 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
          *      });
          *      p.fulfill(142); // => v is: 142, error2: [RangeError:'to large']
          *
-         *      // null callbacks are ignored
+         * null callbacks are ignored:
          *      p.then(function(v){
          *          if(v < 0) throw v;
          *          return v;
@@ -115,8 +113,9 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
 
         /**
          * Fulfills a promise with a value 
+         * 
          * @param {Object} value literal or object
-         * @return {Object} promise for chaining
+         * @return {Object} promise
          * @api public
          */
         o.fulfill = function(x){
@@ -133,8 +132,9 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
 
         /**
          * Rejects promise with a reason
+         * 
          * @param {Object} reason literal or object 
-         * @return {Object} promise for chaining
+         * @return {Object} promise
          * @api public
          */
         o.reject = function(x){
@@ -150,8 +150,9 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
         }
 
         /**
-         * Returns the resolved value  
-         * @return {Object} resolved value
+         * Returns the resolved `value` 
+         *  
+         * @return {Object} value
          * @api public
          */
         o.resolved = function(){
@@ -159,8 +160,9 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
         }
 
         /**
-         * Return the current state  
-         * @return {String} 'pending','fulfilled','rejected'
+         * Returns the current `status`  
+         * 
+         * @return {String} status 
          * @api public
          */
         o.status = function(){
@@ -172,8 +174,7 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
          * The process may also return a promise itself which to wait on.
          * Note: if the process returns undefined the promise will remain pending.  
          * 
-         * #### Example:
-         *      // make readFileSync async
+         * Make readFileSync async:
          *      fs = require('fs');
          *      var asyncReadFile = p.async(fs.readFileSync,'./index.js');
          *      asyncReadFile.then(function(data){
@@ -184,7 +185,7 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
          *      
          * @param {Function} proc
          * @param {...} args    
-         * @return {Object} promise for chaining
+         * @return {Object} promise
          * @api public
          */
         o.async = function(){
@@ -208,8 +209,7 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
         /**
          * Adapted for processes using a callback(err,ret). 
          * 
-         * #### Example:
-         *      // make readFile async
+         * make readFile async:
          *      fs = require('fs');
          *      var asyncReadFile = p.async2(fs.readFile,'./index.js');
          *      asyncReadFile.then(function(data){
@@ -218,7 +218,7 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
          *          console.log("Read error:", error);
          *      });
          *         
-         * @return {Object} promise for chaining
+         * @return {Object} promise
          * @api public
          */
         o.async2 = function(){
@@ -236,8 +236,7 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
          * Joins promises and assembles return values into an array.
          * If any of the promises rejects the rejection handler is called with the error.  
          * 
-         * #### Example:
-         *      // join two promises
+         * join two promises:
          *      p = uP();
          *      a = uP();
          *      b = uP();
@@ -249,8 +248,9 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
          *      b.fulfill('hello');
          *      a.fulfill('world'); // => 'a=hello, b=world' 
          *      p.resolved(); // => ['hello','world']
-         *              
-         * @return {Object} promise for chaining
+         *
+         * @param {Array} promises
+         * @return {Object} promise
          * @api public
          */
         o.join = function(promises){
@@ -277,10 +277,11 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
             return this;
         }
 
+
         /**
          * Spread has the same semantic as then() but splits multiple fulfillment values & rejection reasons into separate arguments  
          * 
-         * #### Example:
+         * Fulfillment array elements as arguments:
          *      var p = uP();
          *      p.fulfill([1,2,3]).spread(function(a,b,c){
          *          console.log(a,b,c); // => 123
@@ -305,6 +306,7 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
         /**
          * Timeout a pending promise and invoke callback function on timeout.
          * Without a callback it throws a RangeError('exceeded timeout').
+         * 
          * @param {Number} time timeout value in ms or null to clear timeout
          * @param {Function} callback optional timeout function callback
          * @throws {RangeError} If exceeded timeout  
