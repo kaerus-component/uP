@@ -151,6 +151,40 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
 
             return this;    
         }
+        /**
+        * Run `task` after nextTick / event loop or fulfill promise unless task is a function.
+        * 
+        * Example:
+        *       function t1(){ throw new Error('to late!') }
+        *       p.defer(t1); 
+        *       p.status; // => 'pending'
+        *       // after nextTick 
+        *       p.status; // => 'rejected'
+        *       p.resolved; // => [ERROR: 'to late!']
+        * Example:
+        *       p.defer([task1,task2,task3]);
+        *       // schedules task1-3 to run after nextTick
+        * Example: 
+        *       p.defer('hello');
+        *       // ... after nextTick
+        *       p.resolved; // 'hello'
+        *       p.status; // 'fulfilled'
+        *
+        * @param {Function} task
+        * @return {Object} value
+        * @api public 
+        */
+        function defer(t){
+            if(typeof t === 'function') task(enclose(t));
+            else if(Array.isArray(t)) for(var i in t) defer(t[i]);
+            else fulfill(t);
+
+            return this;
+        }
+
+        function enclose(func){
+            try { func.call(promise) } catch(err) { reject(err) }
+        }
 
         function resolve(){
             var t, p, v, h;
@@ -183,6 +217,7 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
 
         var promise = Object.create(proto,{
             then: {value: then},
+            defer:{ value: defer },
             fulfill: {value: fulfill},
             reject: {value:  reject},
             /**
@@ -200,7 +235,7 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
             * @return {Object} value
             * @api public 
             */
-            resolved: {get: function(){return value}},
+            resolved: {get: function(){return value}}
         });
 
         // todo: return constructor? 
