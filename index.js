@@ -117,12 +117,23 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
         /**
          * Fulfills a promise with a `value` 
          * 
+         *  Example: fulfillment
+         *      p = uP();
+         *      p.fulfill(123);
+         *      p.resolved; // => 123
+         *  Example: multiple fulfillment values
+         *      p = uP();
+         *      p.fulfill(1,2,3);
+         *      p.resolved; // => [1,2,3]
+         *      
          * @param {Object} value
          * @return {Object} promise
          * @api public
          */
         function fulfill(x){
             if(!state){
+                if(arguments.length > 1)
+                    x = [].slice.call(arguments);
 
                 state = 1;
                 value = x;
@@ -135,7 +146,13 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
 
         /**
          * Rejects promise with a `reason`
-         * 
+         *
+         *  Example:
+         *      p = uP();
+         *      p.reject('some error');
+         *      p.status; // => 'rejected'
+         *      p.resolved; // => 'some error'
+         *      
          * @param {Object} reason 
          * @return {Object} promise
          * @api public

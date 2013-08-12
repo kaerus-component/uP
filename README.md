@@ -11,6 +11,7 @@ A+ compliant promises. If you need more features check out [promise.js](https://
   - [then()](#then)
   - [fulfill()](#fulfill)
   - [reject()](#reject)
+  - [defer()](#defer)
 
 ## uP()
 
@@ -96,8 +97,58 @@ A+ compliant promises. If you need more features check out [promise.js](https://
 
 ## fulfill()
 
-  Fulfills a promise with a `value`
+  Fulfills a promise with a `value` 
+  
+   Example: fulfillment
+```js
+   p = uP();
+   p.fulfill(123);
+   p.resolved; // => 123
+```
+
+   Example: multiple fulfillment values
+```js
+   p = uP();
+   p.fulfill(1,2,3);
+   p.resolved; // => [1,2,3]
+```
 
 ## reject()
 
   Rejects promise with a `reason`
+  
+   Example:
+```js
+   p = uP();
+   p.reject('some error');
+   p.status; // => 'rejected'
+   p.resolved; // => 'some error'
+```
+
+## defer()
+
+  Run `task` after nextTick / event loop or fulfill promise unless task is a function.
+  
+  Example:
+```js
+    function t1(){ throw new Error('to late!') }
+    p.defer(t1); 
+    p.status; // => 'pending'
+    // after nextTick 
+    p.status; // => 'rejected'
+    p.resolved; // => [ERROR: 'to late!']
+```
+
+  Example:
+```js
+    p.defer([task1,task2,task3]);
+    // schedules task1-3 to run after nextTick
+```
+
+  Example: 
+```js
+    p.defer('hello');
+    // ... after nextTick
+    p.resolved; // 'hello'
+    p.status; // 'fulfilled'
+```
