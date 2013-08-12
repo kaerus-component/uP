@@ -27,22 +27,25 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
      * Initializes and returns a promise
      * Provide an object to mixin the features or a resolver callback function.
      *  
-     * require uP:
+     *  Example: require uP
      *       var uP = require('uP');
      *
-     * get a new promise:
+     *  Example: get a new promise
      *       var p = uP();
      *
-     * initialize with object:
+     *  Example: initialize with object
      *       var e = {x:42,test:function(){ this.fulfill(this.x) } };
      *       var p = uP(e);
      *       p.test();
-     *       p.resolved(); // => 42
+     *       // resolved getter contains the value 
+     *       p.resolved; // => 42
+     *       // status getter contains the state
+     *       p.status; // => 'fulfilled'
      *
-     * initialize with funtion:
+     *  Example: initialize with a function
      *       var r = function(r){ r.fulfill('hello') };
      *       p = a(r);
-     *       p.resolved(); // => 'hello'
+     *       p.resolved; // => 'hello'
      *
      * @constructor
      * @static
@@ -50,8 +53,8 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
      * @return {Object} promise
      * @api public
      */
-    function uP(o){
-        o = o ? o : {};
+    function uP(proto){
+        proto = proto ? proto : {};
 
         var states = ['pending','fulfilled','rejected'],
             state = 0, 
@@ -59,10 +62,10 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
             timer, 
             tuple = [];
 
-        /**
+         /**
          * Attaches callback/errback handlers and returns a new promise 
          * 
-         * catch fulfillment or rejection:
+         * Example: catch fulfillment or rejection
          *      var p = uP();
          *      p.then(function(value){
          *          console.log("received:", value);
@@ -71,7 +74,7 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
          *      });
          *      p.fulfill('hello world!'); // => 'received: hello world!'
          *
-         * chainable then clauses:
+         * Example: chainable then clauses
          *      p.then(function(v){
          *          console.log('v is:', v);
          *          if(v > 10) throw new RangeError('to large!');
@@ -84,7 +87,7 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
          *      });
          *      p.fulfill(142); // => v is: 142, error2: [RangeError:'to large']
          *
-         * null callbacks are ignored:
+         * Example: null callbacks are ignored
          *      p.then(function(v){
          *          if(v < 0) throw v;
          *          return v;
@@ -101,7 +104,7 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
          * @return {Object} a decendant promise
          * @api public
          */
-        o.then = function(f,r){
+        function then(f,r){
             var p = uP();
 
             tuple.push([p,f,r]);
@@ -112,13 +115,13 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
         }
 
         /**
-         * Fulfills a promise with a value 
+         * Fulfills a promise with a `value` 
          * 
-         * @param {Object} value literal or object
+         * @param {Object} value
          * @return {Object} promise
          * @api public
          */
-        o.fulfill = function(x){
+        function fulfill(x){
             if(!state){
 
                 state = 1;
@@ -131,13 +134,13 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
         }
 
         /**
-         * Rejects promise with a reason
+         * Rejects promise with a `reason`
          * 
-         * @param {Object} reason literal or object 
+         * @param {Object} reason 
          * @return {Object} promise
          * @api public
          */
-        o.reject = function(x){
+        function reject(x){
             if(!state){
 
                 state = 2;
@@ -147,184 +150,6 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
             }
 
             return this;    
-        }
-
-        /**
-         * Returns the resolved `value` 
-         *  
-         * @return {Object} value
-         * @api public
-         */
-        o.resolved = function(){
-            return value;
-        }
-
-        /**
-         * Returns the current `status`  
-         * 
-         * @return {String} status 
-         * @api public
-         */
-        o.status = function(){
-            return states[state];
-        }
-
-        /**
-         * Makes a process/function asynchronous.
-         * The process may also return a promise itself which to wait on.
-         * Note: if the process returns undefined the promise will remain pending.  
-         * 
-         * Make readFileSync async:
-         *      fs = require('fs');
-         *      var asyncReadFile = p.async(fs.readFileSync,'./index.js');
-         *      asyncReadFile.then(function(data){
-         *          console.log(data.toString())
-         *      },function(error){
-         *          console.log("Read error:", error);
-         *      });
-         *      
-         * @param {Function} proc
-         * @param {...} args    
-         * @return {Object} promise
-         * @api public
-         */
-        o.async = function(){
-            var self = this,
-                args = Array.prototype.slice.call(arguments),
-                proc = args.shift(),
-                ret;
-
-            task(function(){
-                try {
-                    ret = proc.apply(null,args);
-                    if(isPromise(ret)) ret.then(self.fulfill,self.reject);
-                    else if(ret !== undefined) self.fulfill(ret);
-                } catch (e) {
-                    self.reject(e);
-                }
-            });
-
-            return this;
-        }
-        /**
-         * Adapted for processes using a callback(err,ret). 
-         * 
-         * make readFile async:
-         *      fs = require('fs');
-         *      var asyncReadFile = p.async2(fs.readFile,'./index.js');
-         *      asyncReadFile.then(function(data){
-         *          console.log(data.toString())
-         *      },function(error){
-         *          console.log("Read error:", error);
-         *      });
-         *         
-         * @return {Object} promise
-         * @api public
-         */
-        o.async2 = function(){
-            var self = this,
-                args = Array.prototype.slice.call(arguments);
-
-            function callback(err,ret){ if(!e) self.fulfill(ret); else self.reject(ret); }
-
-            args[args.length] = callback;
-
-            return this.async.apply(this,args);
-        }
-
-        /**
-         * Joins promises and assembles return values into an array.
-         * If any of the promises rejects the rejection handler is called with the error.  
-         * 
-         * join two promises:
-         *      p = uP();
-         *      a = uP();
-         *      b = uP();
-         *      p.join([a,b]).spread(function(x,y){
-         *          console.log('a=%s, b=%s',x,y);
-         *      },function(err){
-         *          console.log('error=',e);
-         *      });
-         *      b.fulfill('hello');
-         *      a.fulfill('world'); // => 'a=hello, b=world' 
-         *      p.resolved(); // => ['hello','world']
-         *
-         * @param {Array} promises
-         * @return {Object} promise
-         * @api public
-         */
-        o.join = function(promises){
-            var val = [], 
-                self = this, 
-                chain = uP().fulfill();
-
-            if(!Array.isArray(promises)) promises = [promises];
-
-            function collect(i){
-                promises[i].then(function(v){
-                    val[i] = v;
-                });
-
-                return function(){return promises[i]}    
-            }
-
-            for(var i = 0, l = promises.length; i < l; i++){
-                chain = chain.then(collect(i));
-            }
-
-            chain.then(function(){self.fulfill(val)},function(e){self.reject(e)});
-
-            return this;
-        }
-
-
-        /**
-         * Spread has the same semantic as then() but splits multiple fulfillment values & rejection reasons into separate arguments  
-         * 
-         * Fulfillment array elements as arguments:
-         *      var p = uP();
-         *      p.fulfill([1,2,3]).spread(function(a,b,c){
-         *          console.log(a,b,c); // => 123
-         *      });     
-         *      
-         * @param {Function} onFulfill callback with multiple arguments
-         * @param {Function} onReject errback with multiple arguments  
-         * @return {Object} promise for chaining
-         * @api public
-         */
-        o.spread = function(f,r){	
-            function s(h){
-                return function(v){
-                    if(!Array.isArray(v)) v = [v];
-                    return h.apply(null,v);	
-                }
-            }
-
-            return this.then(s(f),s(r));
-        }
-
-        /**
-         * Timeout a pending promise and invoke callback function on timeout.
-         * Without a callback it throws a RangeError('exceeded timeout').
-         * 
-         * @param {Number} time timeout value in ms or null to clear timeout
-         * @param {Function} callback optional timeout function callback
-         * @throws {RangeError} If exceeded timeout  
-         * @return {Object} promise
-         * @api public
-         */
-        o.timeout = function(t,f){
-            var self = this;
-
-            if(t === null || state) {
-                clearTimeout(timer);
-                timer = null;
-            } else if(!timer){
-                f = f ? f : function(){ self.reject(RangeError("exceeded timeout")) }
-                timer = G.setTimeout(f,t);
-            }       
-
-            return this;
         }
 
         function resolve(){
@@ -356,10 +181,34 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
             return f && typeof f.then === 'function';
         }
 
-        if(typeof o === 'function') o.call(null,o);
+        var promise = Object.create(proto,{
+            then: {value: then},
+            fulfill: {value: fulfill},
+            reject: {value:  reject},
+            /**
+            * returns `status` of promise which can be either 'pending', 'fulfilled' or 'rejected'
+            * 
+            * @attribute status 
+            * @return {String} status
+            * @api public 
+            */
+            status: {get: function(){return states[state]}},
+            /**
+            * returns the resolved `value`, either from fulfillment or rejection.
+            * 
+            * @attribute resolved
+            * @return {Object} value
+            * @api public 
+            */
+            resolved: {get: function(){return value}},
+        });
 
-        return o;
+        // todo: return constructor? 
+        if(typeof proto === 'function') proto(promise);
+
+        return promise;
     }
+
 
     if(module && module.exports) module.exports = uP;
     else if(typeof define ==='function' && define.amd) define(uP); 
