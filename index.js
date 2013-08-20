@@ -105,7 +105,7 @@ try { G = global } catch(e) { try { G = window } catch(e) { G = this } }
          * @api public
          */
         function then(f,r){
-            var p = uP();
+            var p = uP(proto);
 
             tuple.push([p,f,r]);
 
