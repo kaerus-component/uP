@@ -73,6 +73,7 @@
 
         promise = Object.create(proto,{
             then: {value: then},
+            done: {value: done},
             defer:{ value: defer },
             fulfill: {value: fulfill},
             reject: {value:  reject},
@@ -138,6 +139,7 @@
          *      
          * @param {Function} onFulfill callback
          * @param {Function} onReject errback 
+         * @param {Function} onNotify callback 
          * @return {Object} a decendant promise
          * @api public
          */
@@ -149,6 +151,53 @@
             if(state) task(resolver);
 
             return p;
+        }
+
+        /**
+         * Same as `then` but terminates a promise chain and calls onerror / throws error on unhandled Errors 
+         *
+         * Example: capture error with done
+         *      p.then(function(v){
+         *          console.log('v is:', v);
+         *          if(v > 10) throw new RangeError('to large!');
+         *          return v*2;
+         *      }).done(function(v){ 
+         *          // gets v*2 from above
+         *          console.log('v is:', v)
+         *      });
+         *      p.fulfill(142); // => v is: 142, throws [RangeError:'to large']
+         * Example: use onerror handler
+         *      p.onerror = function(error){ console.log("Sorry:",error) };
+         *      p.then(function(v){
+         *          console.log('v is:', v);
+         *          if(v > 10) throw new RangeError('to large!');
+         *          return v*2;
+         *      }).done(function(v){ 
+         *          // gets v*2 from above
+         *          console.log('v is:', v)
+         *      });
+         *      p.fulfill(142); // => v is: 142, "Sorry: [RangeError:'to large']"
+         *      
+         * @param {Function} onFulfill callback
+         * @param {Function} onReject errback 
+         * @param {Function} onNotify callback 
+         * @api public
+         */
+        function done(f,r,n){
+            
+            if(typeof r !== 'function') r = handleError;
+
+            var p = this.then(f,r,n);
+        
+            function handleError(e){
+                task(function(){
+                    if(typeof promise.onerror === 'function'){
+                        promise.onerror(e);
+                    } else {
+                        throw e;
+                    }
+                });
+            }
         }
 
         /**
