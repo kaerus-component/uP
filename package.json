@@ -1,10 +1,14 @@
 {
   "name": "uP",
-  "version": "0.2.0",
-  "description": "A+ micro promise - smaller promises are easier to keep",
+  "version": "0.2.1",
+  "description": "A+ micro promises",
+  "implements": [
+    "Promises/A+ 1.1.0"
+  ],
   "keywords": [
     "promise",
-    "component"
+    "future",
+    "A+"
   ],
   "author": { 
     "name": "Kaerus",
@@ -15,7 +19,13 @@
     "anders elo <anders@kaerus.com>"
   ],
   "devDependencies": {
-    "promises-aplus-tests":">=1.0.0"
+    "promises-aplus-tests":">=1.0.0",
+    "phantomjs": "*",
+    "mocha": "*",
+    "chai": "*",
+    "mocha-phantomjs":">=3.1.0",
+    "benchmark":">=1.0.0",
+    "test-support": "~0.3"
   },
   "bugs": {
     "url": "https://github.com/kaerus-component/uP/issues"
