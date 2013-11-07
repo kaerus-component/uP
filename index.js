@@ -6,7 +6,7 @@
  */
 
 (function(root){
-	"use strict";
+    "use strict";
 
     var task; // for non-blocking tasks
 
@@ -15,7 +15,7 @@
 
         task = root.setImmediate;
 
-    	if(typeof task !== 'function'){
+        if(typeof task !== 'function'){
             if(root.process && typeof root.process.nextTick === 'function') task = root.process.nextTick;
             else if(root.vertx && typeof root.vertx.runOnLoop === 'function') task = root.vertx.RunOnLoop;
             else if(root.vertx && typeof root.vertx.runOnContext === 'function') task = root.vertx.runOnContext;
@@ -317,7 +317,7 @@
 
             if(x === p) reject(new TypeError("x === p"));
 
-            if(x && (typeof x === 'object' || typeof x === 'function')){
+            if(x && (typeof x === 'object' || typeof x === 'function')){
                 try { thenable = x.then } catch(e){ reject(e) }
             }
 
