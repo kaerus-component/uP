@@ -5,30 +5,13 @@
  * @main uP
  */
 
+var task = require('microTask'); // nextTick shim
+
 (function(root){
-    "use strict";
+    "use strict"
 
-    var task; // for non-blocking tasks
-
-    if(typeof root !== 'function') {
-        try { root = global } catch(e) { try { root = window } catch(e) {} }
-
-        task = root.setImmediate;
-
-        if(typeof task !== 'function'){
-            if(root.process && typeof root.process.nextTick === 'function') task = root.process.nextTick;
-            else if(root.vertx && typeof root.vertx.runOnLoop === 'function') task = root.vertx.RunOnLoop;
-            else if(root.vertx && typeof root.vertx.runOnContext === 'function') task = root.vertx.runOnContext;
-            else if (root.MessageChannel && typeof root.MessageChannel === 'function') {
-                var fifo = [], channel = new root.MessageChannel();
-                channel.port1.onmessage = function () { (fifo.shift())() };
-                task = function (f){ fifo[fifo.length] = f; channel.port2.postMessage(); };
-            } 
-            else if(typeof root.setTimeout === 'function') task = function(f){ root.setTimeout(f,0) };
-            else throw new Error("No candidate for setImmediate()"); 
-        }
-    } else task = root;
-
+    try {root = global} catch(e){}
+    
     /**
      * Initializes and returns a promise
      * Provide an object to mixin the features or a resolver callback function.
@@ -343,5 +326,5 @@
     if(module && module.exports) module.exports = uP;
     else if(typeof define ==='function' && define.amd) define(uP); 
     else root.uP = uP;
-})(this);
+}(this));
 

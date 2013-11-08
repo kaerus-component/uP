@@ -1,8 +1,11 @@
 {
   "name": "uP",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "repo": "kaerus-component/uP",
   "description": "A+ micro promises",
+  "dependencies":{
+  	"kaerus-component/microTask": "*"
+  },
   "scripts": ["index.js"],
   "license": "Apache2_0"
 }
