@@ -10,7 +10,7 @@ var task = require('microTask'); // nextTick shim
 (function(root){
     "use strict"
 
-    try {root = global} catch(e){}
+    try {root = global} catch(e){ try {root = window} catch(e){} };
     
     /**
      * Initializes and returns a promise
