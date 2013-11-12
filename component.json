@@ -3,6 +3,11 @@
   "version": "0.2.6",
   "repo": "kaerus-component/uP",
   "description": "A+ micro promises",
+  "keywords":[
+   	"promise",
+	"future",
+	"promises-aplus"
+  ],
   "dependencies":{
   	"kaerus-component/microTask": "0.1.1"
   },
