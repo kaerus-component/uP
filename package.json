@@ -19,7 +19,7 @@
     "anders elo <anders@kaerus.com>"
   ],
   "dependencies": {
-    "microTask": "git://github.com/kaerus-component/microTask.git#0.1.0"
+    "microTask": "git://github.com/kaerus-component/microTask.git#0.1.1"
   },
   "devDependencies": {
     "promises-aplus-tests":">=1.0.0",
