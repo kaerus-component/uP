@@ -5,13 +5,19 @@
 [![Build Status](https://travis-ci.org/kaerus-component/uP.png)](https://travis-ci.org/kaerus-component/uP)
 
 # microPromise(uP) - A+ v1.1 compliant promises
-Provides a [fast](benchmarks.md), small(~1.8KB minified) and fully conforming to Promise/A+ v1.1 specification (passing ~876 [tests](https://travis-ci.org/kaerus-component/uP)).
+Provides a [fast](benchmarks.md) Promises framework which is fully conforming to the Promise/A+ v1.1 specification (passing ~870 [tests](https://travis-ci.org/kaerus-component/uP)).
 
   - [uP.then()](#upthenonfulfillfunctiononrejectfunctiononnotifyfunction)
+  - [uP.spread()](#upspreadonfulfillfunctiononrejectfunctiononnotifyfunction)
   - [uP.done()](#updoneonfulfillfunctiononrejectfunctiononnotifyfunction)
   - [uP.fulfill()](#upfulfillvalueobject)
   - [uP.resolve()](#upresolvevalueobject)
   - [uP.reject()](#uprejectreasonobject)
+  - [uP.timeout()](#uptimeouttimenumbercallbackfunction)
+  - [uP.wrap()](#upwrapprotoobject)
+  - [uP.defer()](#updefer)
+  - [uP.async()](#upasync)
+  - [uP.join()](#upjoinpromisesarray)
 
 ## uP.then(onFulfill:Function, onReject:Function, onNotify:Function)
 
@@ -59,6 +65,19 @@ Provides a [fast](benchmarks.md), small(~1.8KB minified) and fully conforming to
    p.fulfill(-5); // => we got: 5
 ```
 
+## uP.spread(onFulfill:Function, onReject:Function, onNotify:Function)
+
+  Same semantic as `then` but spreads array value into separate arguments 
+  
+  Example: Multiple fulfillment values
+```js
+   p = uP();
+   p.fulfill([1,2,3])
+   p.spread(function(a,b,c){
+       console.log(a,b,c); // => '1 2 3'
+   });
+```
+
 ## uP.done(onFulfill:Function, onReject:Function, onNotify:Function)
 
   Same as `then` but terminates a promise chain and calls onerror / throws error on unhandled Errors 
@@ -98,32 +117,32 @@ Provides a [fast](benchmarks.md), small(~1.8KB minified) and fully conforming to
 ```js
    p = uP();
    p.fulfill(123);
-   p.resolved; // => 123
 ```
 
-   Example: multiple fulfillment values
+   
+   Example: multiple fulfillment values in array
 ```js
    p = uP();
-   p.fulfill(1,2,3);
+   p.fulfill([1,2,3]);
    p.resolved; // => [1,2,3]
 ```
 
 ## uP.resolve(value:Object)
 
-  Resolves a promise with a `value` or another promise 
+  Resolves a promise with a `value` yielded from another promise 
   
-   Example: fulfillment
+   Example: resolve literal value
 ```js
    p = uP();
-   p.resolve(123);
-   p._value; // => 123
+   p.resolve(123); // fulfills promise with 123
 ```
 
-   Example: multiple fulfillment values
+   Example: resolve value from another pending promise
 ```js
-   p = uP();
-   p.fulfill(1,2,3);
-   p.resolved; // => [1,2,3]
+   p1 = uP();
+   p2 = uP();
+   p1.resolve(p2);
+   p2.fulfill(123) // => p2._value = 123
 ```
 
 ## uP.reject(reason:Object)
@@ -133,7 +152,94 @@ Provides a [fast](benchmarks.md), small(~1.8KB minified) and fully conforming to
    Example:
 ```js
    p = uP();
-   p.reject('some error');
-   p.status; // => 'rejected'
-   p.resolved; // => 'some error'
+   p.then(function(ok){
+      console.log("ok:",ok);
+   }, function(error){
+      console.log("error:",error);
+   });
+   p.reject('some error'); // outputs => 'error: some error'
 ```
+
+## uP.timeout(time:Number, callback:Function)
+
+  Timeout a pending promise and invoke callback function on timeout.
+  Without a callback it throws a RangeError('exceeded timeout').
+  
+  Example: timeout & abort()
+```js
+   var p = Promise();
+   p.attach({abort:function(msg){console.log('Aborted:',msg)}});
+   p.timeout(5000);
+   // ... after 5 secs ... => Aborted: |RangeError: 'exceeded timeout']
+```
+
+  Example: cancel timeout
+```js
+   p.timeout(5000);
+   p.timeout(null); // timeout cancelled
+```
+
+## uP.wrap(proto:Object)
+
+  Wraps a `proto` into a promise
+  
+  Example: wrap an Array
+```js
+   p = Promise();
+   c = p.wrap(Array);
+   c(1,2,3); // => calls constructor and fulfills promise 
+   p.resolved; // => [1,2,3]
+```
+
+## uP.defer()
+
+  Deferres a task.
+  The process may also return a promise itself which to wait on.
+  If the process returns undefined the promise will remain pending.  
+  
+  Example: Make readFileSync async
+```js
+   fs = require('fs');
+   var asyncReadFile = p.async(fs.readFileSync,'./index.js','utf-8');
+   asyncReadFile.then(function(data){
+       console.log(data)
+   },function(error){
+       console.log("Read error:", error);
+   });
+```
+
+## uP.async()
+
+  Adapted for processen using a callback(err,ret). 
+  
+  Example: make readFile async
+```js
+   fs = require('fs');
+   var asyncReadFile = p.async2(fs.readFile,'./index.js','utf-8');
+   asyncReadFile.then(function(data){
+       console.log(data);
+   },function(error){
+       console.log("Read error:", error);
+   });
+```
+
+## uP.join(promises:Array)
+
+  Joins promises and assembles return values into an array.
+  If any of the promises rejects the rejection handler is called with the error.  
+  
+  Example: join with two promises
+```js
+   a = uP();
+   b = uP();
+   c = uP();
+   a.join([b,c]).spread(function(a,b,c){
+       console.log('a=%s b=%s c=%s',a,b,c);
+   },function(err){
+       console.log('error=',err);
+   });
+   b.fulfill('world');
+   a.fulfill('hello'); // => 'a=hello, b=world' 
+   c.fulfill('!'); // => outputs 'a=hello b=world c=!'
+```
+

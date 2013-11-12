@@ -11,8 +11,7 @@ Tests performed using [promises-benchmark](https://github.com/killdream/promises
 
 ## Results
 
-Note: this is only a rough performance comparison, 
-most other frameworks didn't even pass the promises/A+ test suite.
+Note: this is only a rough performance comparison.
 
 ```
 :: Benchmarks for: Serial (no noise)
