@@ -1,6 +1,6 @@
 {
   "name": "uP",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "A+ micro promises",
   "implements": [
     "Promises/A+ 1.1.0"
