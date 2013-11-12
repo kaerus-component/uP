@@ -15,7 +15,7 @@ var task = require('microTask'); // nextTick shim
     var slice = Array.prototype.slice.call,
         isArray = Array.isArray;
 
-    function uP(proto){
+    var uP = function microPromise(proto){
 
         if(!(this instanceof uP))
             return new uP(proto);

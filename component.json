@@ -1,6 +1,6 @@
 {
-  "name": "uP",
-  "version": "0.2.6",
+  "name": "micropromise",
+  "version": "0.3.0",
   "repo": "kaerus-component/uP",
   "description": "A+ micro promises",
   "keywords":[
