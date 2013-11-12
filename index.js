@@ -321,13 +321,12 @@ var task = require('microTask'); // nextTick shim
         }              
     }
     /**
-     * Deferres a task.
-     * The process may also return a promise itself which to wait on.
-     * If the process returns undefined the promise will remain pending.  
+     * Deferres a task and fulfills with return value.
+     * The process may also return a promise itself which to wait on.  
      * 
      * Example: Make readFileSync async
      *      fs = require('fs');
-     *      var asyncReadFile = p.async(fs.readFileSync,'./index.js','utf-8');
+     *      var asyncReadFile = uP().defer(fs.readFileSync,'./index.js','utf-8');
      *      asyncReadFile.then(function(data){
      *          console.log(data)
      *      },function(error){
@@ -353,11 +352,11 @@ var task = require('microTask'); // nextTick shim
         return this;
     }
     /**
-     * Adapted for processen using a callback(err,ret). 
+     * Adapted for nodejs style functions expecting a callback. 
      * 
      * Example: make readFile async
      *      fs = require('fs');
-     *      var asyncReadFile = p.async2(fs.readFile,'./index.js','utf-8');
+     *      var asyncReadFile = uP.async(fs.readFile,'./index.js','utf-8');
      *      asyncReadFile.then(function(data){
      *          console.log(data);
      *      },function(error){
@@ -379,21 +378,21 @@ var task = require('microTask'); // nextTick shim
     }
 
     /**
-     * Joins promises and assembles return values into an array.
-     * If any of the promises rejects the rejection handler is called with the error.  
+     * Joins promises and collects results into an array.
+     * If any of the promises are rejected the chain is also rejected.  
      * 
      * Example: join with two promises
      *      a = uP();
      *      b = uP();
      *      c = uP();
      *      a.join([b,c]).spread(function(a,b,c){
-     *          console.log('a=%s b=%s c=%s',a,b,c);
+     *          console.log(a,b,c);
      *      },function(err){
      *          console.log('error=',err);
      *      });
      *      b.fulfill('world');
-     *      a.fulfill('hello'); // => 'a=hello, b=world' 
-     *      c.fulfill('!'); // => ['hello','world','!']
+     *      a.fulfill('hello'); 
+     *      c.fulfill('!'); // => 'hello world !''
      *
      * @param {Array} promises
      * @return {Object} promise

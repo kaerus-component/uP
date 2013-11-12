@@ -7,6 +7,7 @@
 # microPromise(uP) - A+ v1.1 compliant promises
 Provides a [fast](benchmarks.md) Promises framework which is fully conforming to the Promise/A+ v1.1 specification (passing ~870 [tests](https://travis-ci.org/kaerus-component/uP)).
 
+  - [task](#task)
   - [uP.then()](#upthenonfulfillfunctiononrejectfunctiononnotifyfunction)
   - [uP.spread()](#upspreadonfulfillfunctiononrejectfunctiononnotifyfunction)
   - [uP.done()](#updoneonfulfillfunctiononrejectfunctiononnotifyfunction)
@@ -18,6 +19,7 @@ Provides a [fast](benchmarks.md) Promises framework which is fully conforming to
   - [uP.defer()](#updefer)
   - [uP.async()](#upasync)
   - [uP.join()](#upjoinpromisesarray)
+  - [resolver()](#resolver)
 
 ## uP.then(onFulfill:Function, onReject:Function, onNotify:Function)
 
@@ -193,14 +195,13 @@ Provides a [fast](benchmarks.md) Promises framework which is fully conforming to
 
 ## uP.defer()
 
-  Deferres a task.
-  The process may also return a promise itself which to wait on.
-  If the process returns undefined the promise will remain pending.  
+  Deferres a task and fulfills with return value.
+  The process may also return a promise itself which to wait on.  
   
   Example: Make readFileSync async
 ```js
    fs = require('fs');
-   var asyncReadFile = p.async(fs.readFileSync,'./index.js','utf-8');
+   var asyncReadFile = uP().defer(fs.readFileSync,'./index.js','utf-8');
    asyncReadFile.then(function(data){
        console.log(data)
    },function(error){
@@ -210,12 +211,12 @@ Provides a [fast](benchmarks.md) Promises framework which is fully conforming to
 
 ## uP.async()
 
-  Adapted for processen using a callback(err,ret). 
+  Adapted for nodejs style functions expecting a callback. 
   
   Example: make readFile async
 ```js
    fs = require('fs');
-   var asyncReadFile = p.async2(fs.readFile,'./index.js','utf-8');
+   var asyncReadFile = uP.async(fs.readFile,'./index.js','utf-8');
    asyncReadFile.then(function(data){
        console.log(data);
    },function(error){
@@ -225,8 +226,8 @@ Provides a [fast](benchmarks.md) Promises framework which is fully conforming to
 
 ## uP.join(promises:Array)
 
-  Joins promises and assembles return values into an array.
-  If any of the promises rejects the rejection handler is called with the error.  
+  Joins promises and collects results into an array.
+  If any of the promises are rejected the chain is also rejected.  
   
   Example: join with two promises
 ```js
@@ -234,12 +235,11 @@ Provides a [fast](benchmarks.md) Promises framework which is fully conforming to
    b = uP();
    c = uP();
    a.join([b,c]).spread(function(a,b,c){
-       console.log('a=%s b=%s c=%s',a,b,c);
+       console.log(a,b,c);
    },function(err){
        console.log('error=',err);
    });
    b.fulfill('world');
-   a.fulfill('hello'); // => 'a=hello, b=world' 
-   c.fulfill('!'); // => outputs 'a=hello b=world c=!'
+   a.fulfill('hello'); 
+   c.fulfill('!'); // => 'hello world !''
 ```
-
