@@ -1,16 +1,20 @@
 # Benchmarks (12 Nov 2013)
 Tests performed using [promises-benchmark](https://github.com/killdream/promises-benchmark).
 
+```
   * "microPromise": "0.2.5"
   * "pinky": "~0.1.3"
   * "pinky-sync": "git://github.com/killdream/pinky.git#sync-then"
   * "when": "~2.1.1"
   * "deferred": "~0.6.5"
+```
 
 ## Results
+
 Note: this is only a rough performance comparison, 
 most other frameworks didn't even pass the promises/A+ test suite.
 
+```
 :: Benchmarks for: Serial (no noise)
 ›› microPromise x 33.38 ops/sec ±2.25% (80 runs sampled)
 ›› Pinky x 26.99 ops/sec ±1.60% (67 runs sampled)
@@ -132,4 +136,4 @@ Slowest: Deferred
 --- 
 Fastest: When, microPromise 
 Slowest: Deferred
-
+```
