@@ -11,300 +11,175 @@ var task = require('microTask'); // nextTick shim
     "use strict"
 
     try {root = global} catch(e){ try {root = window} catch(e){} };
-    
+
+    function uP(proto){
+
+        if(!(this instanceof uP))
+            return new uP(proto);
+
+        this._tuple = [];
+
+        if(typeof proto === 'function') {
+            var res = this.resolve.bind(this),
+                rej = this.reject.bind(this);
+            proto(res,rej);
+        } else if(proto) for(var key in proto) this[key] = proto[key];
+    }
+
     /**
-     * Initializes and returns a promise
-     * Provide an object to mixin the features or a resolver callback function.
+     * Attaches callback,errback,notify handlers and returns a promise 
+     * 
+     * Example: catch fulfillment or rejection
+     *      var p = uP();
+     *      p.then(function(value){
+     *          console.log("received:", value);
+     *      },function(error){
+     *          console.log("failed with:", error);
+     *      });
+     *      p.fulfill('hello world!'); // => 'received: hello world!'
+     *
+     * Example: chainable then clauses
+     *      p.then(function(v){
+     *          console.log('v is:', v);
+     *          if(v > 10) throw new RangeError('to large!');
+     *          return v*2;
+     *      }).then(function(v){ 
+     *          // gets v*2 from above
+     *          console.log('v is:', v)
+     *      },function(e){
+     *          console.log('error2:', e);
+     *      });
+     *      p.fulfill(142); // => v is: 142, error2: [RangeError:'to large']
+     *
+     * Example: undefined callbacks are ignored
+     *      p.then(function(v){
+     *          if(v < 0) throw v;
+     *          return v;
+     *      }).then(undefined,function(e){
+     *          e = -e;
+     *          return e;
+     *      }).then(function(value){
+     *          console.log('we got:', value);
+     *      });
+     *      p.fulfill(-5); // => we got: 5
+     *      
+     * @param {Function} onFulfill callback
+     * @param {Function} onReject errback 
+     * @param {Function} onNotify callback 
+     * @return {Object} a decendant promise
+     * @api public
+     */
+    uP.prototype.then = function then(f,r,n){
+        var p = new uP();
+
+        this._tuple[this._tuple.length] = [p,f,r,n];
+
+        if(this._state) task(resolver,[this._tuple,this._state,this._value]);
+
+        return p;
+    }
+
+    /**
+     * Same as `then` but terminates a promise chain and calls onerror / throws error on unhandled Errors 
+     *
+     * Example: capture error with done
+     *      p.then(function(v){
+     *          console.log('v is:', v);
+     *          if(v > 10) throw new RangeError('to large!');
+     *          return v*2;
+     *      }).done(function(v){ 
+     *          // gets v*2 from above
+     *          console.log('v is:', v)
+     *      });
+     *      p.fulfill(142); // => v is: 142, throws [RangeError:'to large']
+     * Example: use onerror handler
+     *      p.onerror = function(error){ console.log("Sorry:",error) };
+     *      p.then(function(v){
+     *          console.log('v is:', v);
+     *          if(v > 10) throw new RangeError('to large!');
+     *          return v*2;
+     *      }).done(function(v){ 
+     *          // gets v*2 from above
+     *          console.log('v is:', v)
+     *      });
+     *      p.fulfill(142); // => v is: 142, "Sorry: [RangeError:'to large']"
+     *
+     * @param {Function} onFulfill callback
+     * @param {Function} onReject errback 
+     * @param {Function} onNotify callback 
+     * @api public
+     */
+    uP.prototype.done = function done(f,r,n){
+        
+        if(typeof r !== 'function') r = handleError;
+
+        var self = this, p = this.then(f,r,n);
+    
+        function handleError(e){
+            task(function(){
+                if(typeof self.onerror === 'function'){
+                    self.onerror(e);
+                } else {
+                    throw e;
+                }
+            });
+        }
+    }
+
+    /**
+     * Fulfills a promise with a `value` 
+     * 
+     *  Example: fulfillment
+     *      p = uP();
+     *      p.fulfill(123);
      *  
-     *  Example: require uP
-     *       var uP = require('uP');
-     *
-     *  Example: get a new promise
-     *       var p = uP();
-     *
-     *  Example: initialize with object
-     *       var e = {x:42,test:function(){ this.fulfill(this.x) } };
-     *       var p = uP(e);
-     *       p.test();
-     *       // resolved getter contains the value 
-     *       p.resolved; // => 42
-     *       // status getter contains the state
-     *       p.status; // => 'fulfilled'
-     *
-     *  Example: initialize with a function
-     *       var r = function(r){ r.fulfill('hello') };
-     *       p = a(r);
-     *       p.resolved; // => 'hello'
-     *
-     * @constructor
-     * @static
-     * @param {Object} o
+     *  Example: multiple fulfillment values in array
+     *      p = uP();
+     *      p.fulfill([1,2,3]);
+     *      p.resolved; // => [1,2,3]
+     *      
+     * @param {Object} value
      * @return {Object} promise
      * @api public
      */
-    function uP(proto){
-        "use strict";
-
-        proto = proto ? proto : {};
-
-        var promise,
-            states = ['pending','fulfilled','rejected'],
-            state = 0, 
-            value,
-            timer, 
-            tuple = [];
-
-        promise = Object.create(proto,{
-            then: {value: then},
-            done: {value: done},
-            defer:{ value: defer },
-            fulfill: {value: fulfill},
-            reject: {value:  reject},
-            resolve: {value:  resolve},
-            /**
-            * returns `status` of promise which can be either 'pending', 'fulfilled' or 'rejected'
-            * 
-            * @attribute status 
-            * @return {String} status
-            * @api public 
-            */
-            status: {get: function(){return states[state]}},
-            /**
-            * returns the resolved `value`, either from fulfillment or rejection.
-            * 
-            * @attribute resolved
-            * @return {Object} value
-            * @api public 
-            */
-            resolved: {get: function(){return value}},
-            isPending: {get: function(){return state === 0}}
-        });
-
-        if(typeof proto === 'function') proto(promise);
-
-        
-         /**
-         * Attaches callback,errback,notify handlers and returns a promise 
-         * 
-         * Example: catch fulfillment or rejection
-         *      var p = uP();
-         *      p.then(function(value){
-         *          console.log("received:", value);
-         *      },function(error){
-         *          console.log("failed with:", error);
-         *      });
-         *      p.fulfill('hello world!'); // => 'received: hello world!'
-         *
-         * Example: chainable then clauses
-         *      p.then(function(v){
-         *          console.log('v is:', v);
-         *          if(v > 10) throw new RangeError('to large!');
-         *          return v*2;
-         *      }).then(function(v){ 
-         *          // gets v*2 from above
-         *          console.log('v is:', v)
-         *      },function(e){
-         *          console.log('error2:', e);
-         *      });
-         *      p.fulfill(142); // => v is: 142, error2: [RangeError:'to large']
-         *
-         * Example: undefined callbacks are ignored
-         *      p.then(function(v){
-         *          if(v < 0) throw v;
-         *          return v;
-         *      }).then(undefined,function(e){
-         *          e = -e;
-         *          return e;
-         *      }).then(function(value){
-         *          console.log('we got:', value);
-         *      });
-         *      p.fulfill(-5); // => we got: 5
-         *      
-         * @param {Function} onFulfill callback
-         * @param {Function} onReject errback 
-         * @param {Function} onNotify callback 
-         * @return {Object} a decendant promise
-         * @api public
-         */
-        function then(f,r,n){
-            var p = uP(proto);
-
-            tuple[tuple.length] = [p,f,r,n];
-
-            if(state) task(resolver);
-
-            return p;
+    uP.prototype.fulfill = function fulfill(x){
+        if(!this._state){
+            task(resolver,[this._tuple,this._state = 1,this._value = x]);
         }
 
-        /**
-         * Same as `then` but terminates a promise chain and calls onerror / throws error on unhandled Errors 
-         *
-         * Example: capture error with done
-         *      p.then(function(v){
-         *          console.log('v is:', v);
-         *          if(v > 10) throw new RangeError('to large!');
-         *          return v*2;
-         *      }).done(function(v){ 
-         *          // gets v*2 from above
-         *          console.log('v is:', v)
-         *      });
-         *      p.fulfill(142); // => v is: 142, throws [RangeError:'to large']
-         * Example: use onerror handler
-         *      p.onerror = function(error){ console.log("Sorry:",error) };
-         *      p.then(function(v){
-         *          console.log('v is:', v);
-         *          if(v > 10) throw new RangeError('to large!');
-         *          return v*2;
-         *      }).done(function(v){ 
-         *          // gets v*2 from above
-         *          console.log('v is:', v)
-         *      });
-         *      p.fulfill(142); // => v is: 142, "Sorry: [RangeError:'to large']"
-         *      
-         * @param {Function} onFulfill callback
-         * @param {Function} onReject errback 
-         * @param {Function} onNotify callback 
-         * @api public
-         */
-        function done(f,r,n){
-            
-            if(typeof r !== 'function') r = handleError;
+        return this;    
+    }
 
-            var p = this.then(f,r,n);
-        
-            function handleError(e){
-                task(function(){
-                    if(typeof promise.onerror === 'function'){
-                        promise.onerror(e);
-                    } else {
-                        throw e;
-                    }
-                });
-            }
-        }
+    /**
+     * Resolves a promise with a `value` yielded from another promise 
+     * 
+     *  Example: resolve literal value
+     *      p = uP();
+     *      p.resolve(123); // fulfills promise with 123
+     *      
+     *  Example: resolve value from another pending promise
+     *      p1 = uP();
+     *      p2 = uP();
+     *      p1.resolve(p2);
+     *      p2.fulfill(123) // => p2._value = 123
+     *      
+     * @param {Object} value
+     * @return {Object} promise
+     * @api public
+     */
+    uP.prototype.resolve = function resolve(x){
+        var thenable, z = 0, p = this, z = 0;
 
-        /**
-         * Fulfills a promise with a `value` 
-         * 
-         *  Example: fulfillment
-         *      p = uP();
-         *      p.fulfill(123);
-         *      p.resolved; // => 123
-         *  Example: multiple fulfillment values
-         *      p = uP();
-         *      p.fulfill(1,2,3);
-         *      p.resolved; // => [1,2,3]
-         *      
-         * @param {Object} value
-         * @return {Object} promise
-         * @api public
-         */
-        function fulfill(x){
-            if(!state){
-
-                if(arguments.length > 1)
-                x = [].slice.call(arguments);
-
-                state = 1;
-                value = x;
-
-                task(resolver);
-            }
-
-            return this;    
-        }
-
-        /**
-         * Rejects promise with a `reason`
-         *
-         *  Example:
-         *      p = uP();
-         *      p.reject('some error');
-         *      p.status; // => 'rejected'
-         *      p.resolved; // => 'some error'
-         *      
-         * @param {Object} reason 
-         * @return {Object} promise
-         * @api public
-         */
-        function reject(x){
-            if(!state){
-
-                state = 2;
-                value = x;
-
-                task(resolver);
-            }
-
-            return this;    
-        }
-
-        /**
-        * Run `task` after nextTick / event loop or fulfill promise unless task is a function.
-        * 
-        * Example:
-        *       function t1(){ throw new Error('to late!') }
-        *       p.defer(t1); 
-        *       p.status; // => 'pending'
-        *       // after nextTick 
-        *       p.status; // => 'rejected'
-        *       p.resolved; // => [ERROR: 'to late!']
-        * Example:
-        *       p.defer([task1,task2,task3]);
-        *       // schedules task1-3 to run after nextTick
-        * Example: 
-        *       p.defer('hello');
-        *       // ... after nextTick
-        *       p.resolved; // 'hello'
-        *       p.status; // 'fulfilled'
-        *
-        * @param {Function} task
-        * @return {Object} value
-        * @api public 
-        */
-        function defer(t){
-            if(typeof t === 'function') task(enclose(t));
-            else if(Array.isArray(t)) for(var i in t) defer(t[i]);
-            else fulfill(t);
-
-            return this;
-        }
-
-        function enclose(func){
-            try { func.call(promise) } catch(err) { reject(err) }
-        }
-
-        function resolver(){
-            var t, p, h, x = value;
-
-            while(t = tuple.shift()) {
-                p = t[0];
-                h = t[state];
-
-                if(typeof h === 'function') {
-                    try {
-                        x = h(value);
-                        p.resolve(x);
-                    } catch(e) {
-                        p.reject(e);
-                    }     
-                } else {
-                    if(state == 1) p.fulfill(x);
-                    else if(state == 2) p.reject(x);
-                }
-            }
-        }
-
-        function resolve(x){
-            var thenable, z = 0, p = this;
-
-            if(x === p) reject(new TypeError("x === p"));
+        if(!this._state){
+            if(x === p) p.reject(new TypeError("x === p"));
 
             if(x && (typeof x === 'object' || typeof x === 'function')){
-                try { thenable = x.then } catch(e){ reject(e) }
-            }
+                try { thenable = x.then } catch(e){ p.reject(e) }
+            } 
 
-            if(typeof thenable === 'function'){
+            if(typeof thenable !== 'function'){
+                task(resolver,[this._tuple,this._state = 1,this._value = x])   
+            } else if(!z){
                 try {
                     thenable.apply(x,[function(y){
                         if(!z++) p.resolve(y);
@@ -312,14 +187,58 @@ var task = require('microTask'); // nextTick shim
                         if(!z++) p.reject(r);
                     }]);
                 } catch(e) {
-                    if(!z++) reject(e);
-                }    
-            } else {
-                fulfill(x);
+                    if(!z++) p.reject(e);
+                }  
             }
         }
 
-        return promise;
+        return this;
+    }
+    /**
+     * Rejects promise with a `reason`
+     *
+     *  Example:
+     *      p = uP();
+     *      p.then(function(ok){
+     *         console.log("ok:",ok);
+     *      }, function(error){
+     *         console.log("error:",error);
+     *      });
+     *      p.reject('some error'); // outputs => 'error: some error' 
+     *      
+     * @param {Object} reason 
+     * @return {Object} promise
+     * @api public
+     */
+    uP.prototype.reject = function reject(x){
+        if(!this._state){
+            task(resolver,[this._tuple,this._state = 2,this._value = x]);
+        }
+
+        return this;    
+    }
+
+    /* Resolver function, yields back a promised value to handlers */
+    function resolver(tuple,state,value){
+        var t, p, h, x = value;
+
+        while(t = tuple.shift()) {
+            p = t[0];
+            h = t[state];
+
+            if(typeof h === 'function') {
+                try {
+                    x = h(value);
+                    p.resolve(x);
+                } catch(e) {
+                    p.reject(e);
+                }     
+            } else {
+                p._state = state;
+                p._value = x;
+                task(resolver,[p._tuple, p._state, p._value]);
+            }
+        }
     }
 
     /* expose this module */

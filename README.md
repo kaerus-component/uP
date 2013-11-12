@@ -5,51 +5,15 @@
 [![Build Status](https://travis-ci.org/kaerus-component/uP.png)](https://travis-ci.org/kaerus-component/uP)
 
 # microPromise(uP) - A+ v1.1 compliant promises
+Provides a [fast](benchmark.md), small(~1.8KB minified) and fully conforming to Promise/A+ v1.1 specification (passing ~876 [tests](https://travis-ci.org/kaerus-component/uP)).
 
-  - [uP()](#up)
-  - [then()](#then)
-  - [done()](#done)
-  - [fulfill()](#fulfill)
-  - [reject()](#reject)
-  - [defer()](#defer)
+  - [uP.then()](#upthenonfulfillfunctiononrejectfunctiononnotifyfunction)
+  - [uP.done()](#updoneonfulfillfunctiononrejectfunctiononnotifyfunction)
+  - [uP.fulfill()](#upfulfillvalueobject)
+  - [uP.resolve()](#upresolvevalueobject)
+  - [uP.reject()](#uprejectreasonobject)
 
-## uP()
-
-  Initializes and returns a promise
-  Provide an object to mixin the features or a resolver callback function.
-   
-   Example: require uP
-```js
-    var uP = require('uP');
-```
-
-  
-   Example: get a new promise
-```js
-    var p = uP();
-```
-
-  
-   Example: initialize with object
-```js
-    var e = {x:42,test:function(){ this.fulfill(this.x) } };
-    var p = uP(e);
-    p.test();
-    // resolved getter contains the value 
-    p.resolved; // => 42
-    // status getter contains the state
-    p.status; // => 'fulfilled'
-```
-
-  
-   Example: initialize with a function
-```js
-    var r = function(r){ r.fulfill('hello') };
-    p = a(r);
-    p.resolved; // => 'hello'
-```
-
-## then()
+## uP.then(onFulfill:Function, onReject:Function, onNotify:Function)
 
   Attaches callback,errback,notify handlers and returns a promise 
   
@@ -95,7 +59,7 @@
    p.fulfill(-5); // => we got: 5
 ```
 
-## done()
+## uP.done(onFulfill:Function, onReject:Function, onNotify:Function)
 
   Same as `then` but terminates a promise chain and calls onerror / throws error on unhandled Errors 
   
@@ -126,7 +90,7 @@
    p.fulfill(142); // => v is: 142, "Sorry: [RangeError:'to large']"
 ```
 
-## fulfill()
+## uP.fulfill(value:Object)
 
   Fulfills a promise with a `value` 
   
@@ -144,7 +108,25 @@
    p.resolved; // => [1,2,3]
 ```
 
-## reject()
+## uP.resolve(value:Object)
+
+  Resolves a promise with a `value` or another promise 
+  
+   Example: fulfillment
+```js
+   p = uP();
+   p.resolve(123);
+   p._value; // => 123
+```
+
+   Example: multiple fulfillment values
+```js
+   p = uP();
+   p.fulfill(1,2,3);
+   p.resolved; // => [1,2,3]
+```
+
+## uP.reject(reason:Object)
 
   Rejects promise with a `reason`
   
@@ -155,32 +137,3 @@
    p.status; // => 'rejected'
    p.resolved; // => 'some error'
 ```
-
-## defer()
-
-  Run `task` after nextTick / event loop or fulfill promise unless task is a function.
-  
-  Example:
-```js
-    function t1(){ throw new Error('to late!') }
-    p.defer(t1); 
-    p.status; // => 'pending'
-    // after nextTick 
-    p.status; // => 'rejected'
-    p.resolved; // => [ERROR: 'to late!']
-```
-
-  Example:
-```js
-    p.defer([task1,task2,task3]);
-    // schedules task1-3 to run after nextTick
-```
-
-  Example: 
-```js
-    p.defer('hello');
-    // ... after nextTick
-    p.resolved; // 'hello'
-    p.status; // 'fulfilled'
-```
-
