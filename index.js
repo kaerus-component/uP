@@ -12,7 +12,7 @@ var task = require('microTask'); // nextTick shim
 
     try {root = global} catch(e){ try {root = window} catch(e){} };
 
-    var slice = Array.prototype.slice.call,
+    var slice = Array.prototype.slice,
         isArray = Array.isArray;
 
     var uP = function microPromise(proto){
@@ -24,8 +24,11 @@ var task = require('microTask'); // nextTick shim
 
         if(typeof proto === 'function') {
             var res = this.resolve.bind(this),
-                rej = this.reject.bind(this);
-            proto(res,rej);
+                rej = this.reject.bind(this),
+                pro = this.progress.bind(this),
+                tim = this.timeout.bind(this);
+
+            proto(res,rej,pro,tim);
         } else if(proto) for(var key in proto) this[key] = proto[key];
     }
 
@@ -246,6 +249,32 @@ var task = require('microTask'); // nextTick shim
     }
 
     /**
+     * Notifies attached handlers
+     *
+     *  Example:
+     *      p = uP();
+     *      p.then(function(ok){
+     *         console.log("ok:",ok);
+     *      }, function(error){
+     *         console.log("error:",error);
+     *      }, function(notify){
+     *         console.log(notify);
+     *      });
+     *      p.progress("almost done"); // optputs => 'almost done' 
+     *      p.reject('some error'); // outputs => 'error: some error' 
+     *      
+     * @param {Object} arguments 
+     * @api public
+     */
+    uP.prototype.progress = function(){
+        var args = slice.call(arguments), fn;
+        for(var i = 0, l = this._tuple.length; i < l; i++){
+            if(typeof (fn = this._tuple[i][3]) === 'function')
+                fn.apply(this,arguments);
+        }
+    }
+
+    /**
      * Timeout a pending promise and invoke callback function on timeout.
      * Without a callback it throws a RangeError('exceeded timeout').
      *
@@ -304,7 +333,7 @@ var task = require('microTask'); // nextTick shim
         var p = this;
 
         return function(){
-            var args = slice(arguments), ret;
+            var args = slice.call(arguments), ret;
 
             if(proto instanceof uP){
                 proto.fulfill(args).then(p.fulfill,p.reject);
@@ -337,7 +366,7 @@ var task = require('microTask'); // nextTick shim
      * @api public
      */
     uP.prototype.defer = function(){
-        var args = slice(arguments),
+        var args = slice.call(arguments),
             proc = args.shift(),
             p = this;
 
@@ -368,7 +397,7 @@ var task = require('microTask'); // nextTick shim
      */
     uP.prototype.async = function(){
         var p = this,
-            args = slice(arguments);
+            args = slice.call(arguments);
 
         function callback(err,ret){ if(!err) p.fulfill(ret); else p.reject(ret); }
 
@@ -404,7 +433,7 @@ var task = require('microTask'); // nextTick shim
             u = new uP().resolve(p).then(function(v){y[0] = v});
 
         if(arguments.length > 1) {
-            j = slice(arguments);
+            j = slice.call(arguments);
         }
 
         if(!isArray(j)) j = [j];
