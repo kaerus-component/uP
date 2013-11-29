@@ -16,20 +16,22 @@ var task = require('microTask'); // nextTick shim
         isArray = Array.isArray;
 
     var uP = function microPromise(proto){
+        // object mixin
+        if(proto && typeof proto === 'object'){ 
+            for(var key in uP.prototype) proto[key] = uP.prototype[key];
+            proto._tuple = [];
+            return proto;
+        }
 
-        if(!(this instanceof uP))
-            return new uP(proto);
+        if(!(this instanceof microPromise))
+            return new microPromise(proto);
 
         this._tuple = [];
 
+        // resolver callback
         if(typeof proto === 'function') {
-            var res = this.resolve.bind(this),
-                rej = this.reject.bind(this),
-                pro = this.progress.bind(this),
-                tim = this.timeout.bind(this);
-
-            proto(res,rej,pro,tim);
-        } else if(proto) for(var key in proto) this[key] = proto[key];
+            proto(this.resolve,this.reject,this.progress,this.timeout);
+        }
     }
 
     /**
