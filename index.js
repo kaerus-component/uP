@@ -5,7 +5,7 @@
  * @main uP
  */
 
-var task = require('microTask'); // nextTick shim
+var task = require('microtask'); // nextTick shim
 
 (function(root){
     "use strict"
