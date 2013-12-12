@@ -82,7 +82,7 @@ var task = require('microtask'); // nextTick shim
 
         this._tuple[this._tuple.length] = [p,f,r,n];
 
-        if(this._state) task(resolver,[this._tuple,this._state,this._value]);
+        if(this._state) task(resolver,[this._tuple,this._state,this._value,this._opaque]);
 
         return p;
     }
@@ -103,9 +103,9 @@ var task = require('microtask'); // nextTick shim
      * @api public
      */
     uP.prototype.spread = function(f,r,n){  
-        function s(v){
+        function s(v,a){
             if(!isArray(v)) v = [v];
-            return f.apply(f,v); 
+            return f.apply(f,v.concat(a)); 
         }
 
         return this.then(s,r,n);
@@ -169,13 +169,30 @@ var task = require('microtask'); // nextTick shim
      *      p.fulfill([1,2,3]);
      *      p.resolved; // => [1,2,3]
      *      
+     *  Example: Pass through opaque arguments (experimental)
+     *      p = uP();
+     *      p.fulfill("hello","world");
+     *      p.then(function(x,o){
+     *          console.log(x,o[0]); // => "hello world"
+     *          o.push("!");
+     *          return "bye bye";
+     *      }).then(function(x,o){
+     *          console.log(x,o.join('')); // => "bye bye world!"
+     *      })
+     *
      * @param {Object} value
      * @return {Object} promise
      * @api public
      */
     uP.prototype.fulfill = function(x){
+        var opaque;
+
         if(!this._state){
-            task(resolver,[this._tuple,this._state = 1,this._value = x]);
+            /* pass through opaque arguments */
+            if(arguments.length > 1)
+                opaque = [].slice.call(arguments,1);
+
+            task(resolver,[this._tuple,this._state = 1,this._value = x, this._opaque = opaque]);
         }
 
         return this;    
@@ -198,7 +215,7 @@ var task = require('microtask'); // nextTick shim
      * @return {Object} promise
      * @api public
      */
-    uP.prototype.resolve = function(x){
+    uP.prototype.resolve = function(x,o){
         var then, z = 0, p = this, z = 0;
 
         if(!this._state){
@@ -209,11 +226,11 @@ var task = require('microtask'); // nextTick shim
             } 
 
             if(typeof then !== 'function'){
-                task(resolver,[this._tuple,this._state = 1,this._value = x])   
+                task(resolver,[this._tuple,this._state = 1,this._value = x, this._opaque = o])   
             } else if(!z){
                 try {
                     then.apply(x,[function(y){
-                        if(!z++) p.resolve(y);
+                        if(!z++) p.resolve(y,o);
                     },function(r){
                         if(!z++) p.reject(r);
                     }]);
@@ -457,7 +474,7 @@ var task = require('microtask'); // nextTick shim
 
 
     /* Resolver function, yields back a promised value to handlers */
-    function resolver(tuple,state,value){
+    function resolver(tuple,state,value,opaque){
         var t, p, h, x = value;
 
         while(t = tuple.shift()) {
@@ -466,15 +483,16 @@ var task = require('microtask'); // nextTick shim
 
             if(typeof h === 'function') {
                 try {
-                    x = h(value);
-                    p.resolve(x);
+                    x = h(value,opaque);
+                    p.resolve(x,opaque);
                 } catch(e) {
                     p.reject(e);
                 }     
             } else {
                 p._state = state;
                 p._value = x;
-                task(resolver,[p._tuple, p._state, p._value]);
+                p._opaque = opaque;
+                task(resolver,[p._tuple, p._state, p._value, p._opaque]);
             }
         }
     }
