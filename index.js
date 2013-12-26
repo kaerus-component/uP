@@ -184,15 +184,9 @@ var task = require('microtask'); // nextTick shim
      * @return {Object} promise
      * @api public
      */
-    uP.prototype.fulfill = function(x){
-        var opaque;
-
+    uP.prototype.fulfill = function(x,o){
         if(!this._state){
-            /* pass through opaque arguments */
-            if(arguments.length > 1)
-                opaque = [].slice.call(arguments,1);
-
-            task(resolver,[this._tuple,this._state = 1,this._value = x, this._opaque = opaque]);
+            task(resolver,[this._tuple,this._state = 1,this._value = x, this._opaque = o]);
         }
 
         return this;    
@@ -259,9 +253,9 @@ var task = require('microtask'); // nextTick shim
      * @return {Object} promise
      * @api public
      */
-    uP.prototype.reject = function(x){
+    uP.prototype.reject = function(x,o){
         if(!this._state){
-            task(resolver,[this._tuple,this._state = 2,this._value = x]);
+            task(resolver,[this._tuple,this._state = 2,this._value = x, this._opaque = o]);
         }
 
         return this;    
