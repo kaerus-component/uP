@@ -104,7 +104,7 @@ var task = require('microtask'); // nextTick shim
      */
     uP.prototype.spread = function(f,r,n){  
         function s(v,a){
-            if(!isArray(v)) v = [v];
+            if(!Array.isArray(v)) v = [v];
             return f.apply(f,v.concat(a)); 
         }
 
@@ -348,7 +348,7 @@ var task = require('microtask'); // nextTick shim
         return function(){
             var args = slice.call(arguments), ret;
 
-            if(proto instanceof uP){
+            if(proto instanceof microPromise){
                 proto.fulfill(args).then(p.fulfill,p.reject);
             } else if(typeof proto === 'function'){
                 try{
