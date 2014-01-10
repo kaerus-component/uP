@@ -9,7 +9,7 @@
 	"promises-aplus"
   ],
   "dependencies":{
-  	"kaerus-component/microTask": "0.1.3"
+  	"kaerus-component/microTask": "0.1.4"
   },
   "scripts": ["index.js"],
   "license": "Apache2_0"

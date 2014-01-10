@@ -19,7 +19,7 @@
     "anders elo <anders@kaerus.com>"
   ],
   "dependencies": {
-    "microtask": "*"
+    "microtask": "0.1.4"
   },
   "devDependencies": {
     "promises-aplus-tests":">=1.0.0",
