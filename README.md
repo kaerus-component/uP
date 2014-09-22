@@ -124,14 +124,15 @@
   Example: Catch error
 ```js
    p = uP();
-   p.then(function(){ throw "an error occured";})
-    .done(function(v){
-       console.log("no error", v);
+   p.then(function(v){
+       console.log("someone said:", v);  //-> "Hello there"
+       return "boom!";
      })
+    .then(function(v){ if(v === 'boom!') throw "something bad happened!";})
     .catch(function(e){
        console.log("error:",e);
     });
-   p.resolve("hello there");
+   p.resolve("Hello there");
 ```
 
 ## uP.fulfill(value:Object)
