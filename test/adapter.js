@@ -23,5 +23,5 @@ exports.deferred = function(){
   	reject: function(error){
 		  promise.reject(error);
   	}
-  }
-}
+  };
+};

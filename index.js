@@ -1,4 +1,4 @@
- /**
+/**
  * Provides A+ v1.1 compliant promises.
  * @module uP
  * @name microPromise
@@ -78,7 +78,7 @@ var task = require('microtask'); // nextTick shim
      * @api public
      */
     uP.prototype.then = function(f,r,n){
-        var p = new Promise();
+        var p = new this.constructor();
 
         this._tuple[this._tuple.length] = [p,f,r,n];
 
@@ -225,19 +225,19 @@ var task = require('microtask'); // nextTick shim
                 try {
                     then.apply(x,[function(y){
                         if(!z) {
-                          p.resolve(y,o);
-                          z = true;
+                            p.resolve(y,o);
+                            z = true;
                         }
                     },function(r){
                         if(!z) {
-                          p.reject(r);
-                          z = true;
+                            p.reject(r);
+                            z = true;
                         }
                     }]);
                 } catch(e) {
                     if(!z) {
-                      p.reject(e);
-                      z = true;
+			p.reject(e);
+			z = true;
                     }
                 }
             }
@@ -447,7 +447,7 @@ var task = require('microtask'); // nextTick shim
         },function(progress){
             return callback(0,progress);
         });
-   };
+    };
 
     /**
      * Joins promises and collects results into an array.
@@ -473,7 +473,7 @@ var task = require('microtask'); // nextTick shim
     uP.prototype.join = function(j){
         var p = this,
             y = [],
-            u = new Promise().resolve(p).then(function(v){y[0] = v;});
+            u = new this.constructor().resolve(p).then(function(v){y[0] = v;});
 
         if(arguments.length > 1) {
             j = slice.call(arguments);

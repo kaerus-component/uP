@@ -5,7 +5,7 @@
 [![Build Status](https://travis-ci.org/kaerus-component/uP.png)](https://travis-ci.org/kaerus-component/uP)
 
 # microPromise(uP) - A+ v1.1 compliant promises
-Provides a [fast](benchmarks.md) Promises framework which is fully conforming to the Promise/A+ v1.1 specification (passing ~870 [tests](https://travis-ci.org/kaerus-component/uP)).
+Provides a [fast](benchmarks.md) Promises framework which is fully conforming to the Promise/A+ v2.1.0 specification (passing ~870 [tests](https://travis-ci.org/kaerus-component/uP)).
 
   - [task](#task)
   - [uP.then()](#upthenonfulfillfunctiononrejectfunctiononnotifyfunction)
