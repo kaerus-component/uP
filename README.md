@@ -5,25 +5,31 @@
 [![Build Status](https://travis-ci.org/kaerus-component/uP.png)](https://travis-ci.org/kaerus-component/uP)
 
 # microPromise(uP) - A+ v1.1 compliant promises
-Provides a [fast](benchmarks.md) Promises framework which is fully conforming to the Promise/A+ v2.1.0 specification (passing ~870 [tests](https://travis-ci.org/kaerus-component/uP)).
 
   - [task](#task)
   - [uP.then()](#upthenonfulfillfunctiononrejectfunctiononnotifyfunction)
   - [uP.spread()](#upspreadonfulfillfunctiononrejectfunctiononnotifyfunction)
   - [uP.done()](#updoneonfulfillfunctiononrejectfunctiononnotifyfunction)
+  - [uP.catch()](#upcatchonerrorfunction)
   - [uP.fulfill()](#upfulfillvalueobject)
   - [uP.resolve()](#upresolvevalueobject)
   - [uP.reject()](#uprejectreasonobject)
+  - [uP.progress()](#upprogressargumentsobject)
   - [uP.timeout()](#uptimeouttimenumbercallbackfunction)
   - [uP.wrap()](#upwrapprotoobject)
   - [uP.defer()](#updefer)
   - [uP.async()](#upasync)
+  - [uP.nodejs()](#upnodejs)
   - [uP.join()](#upjoinpromisesarray)
   - [resolver()](#resolver)
 
+## task
+
+  Provides A+ v1.1 compliant promises.
+
 ## uP.then(onFulfill:Function, onReject:Function, onNotify:Function)
 
-  Attaches callback,errback,notify handlers and returns a promise 
+  Attaches callback,errback,notify handlers and returns a promise
   
   Example: catch fulfillment or rejection
 ```js
@@ -43,7 +49,7 @@ Provides a [fast](benchmarks.md) Promises framework which is fully conforming to
        console.log('v is:', v);
        if(v > 10) throw new RangeError('to large!');
        return v*2;
-   }).then(function(v){ 
+   }).then(function(v){
        // gets v*2 from above
        console.log('v is:', v)
    },function(e){
@@ -69,7 +75,7 @@ Provides a [fast](benchmarks.md) Promises framework which is fully conforming to
 
 ## uP.spread(onFulfill:Function, onReject:Function, onNotify:Function)
 
-  Same semantic as `then` but spreads array value into separate arguments 
+  Same semantic as `then` but spreads array into arguments
   
   Example: Multiple fulfillment values
 ```js
@@ -82,7 +88,7 @@ Provides a [fast](benchmarks.md) Promises framework which is fully conforming to
 
 ## uP.done(onFulfill:Function, onReject:Function, onNotify:Function)
 
-  Same as `then` but terminates a promise chain and calls onerror / throws error on unhandled Errors 
+  Same as `then` but terminates a promise chain and calls onerror / throws error on unhandled Errors
   
   Example: capture error with done
 ```js
@@ -90,7 +96,7 @@ Provides a [fast](benchmarks.md) Promises framework which is fully conforming to
        console.log('v is:', v);
        if(v > 10) throw new RangeError('to large!');
        return v*2;
-   }).done(function(v){ 
+   }).done(function(v){
        // gets v*2 from above
        console.log('v is:', v)
    });
@@ -104,16 +110,33 @@ Provides a [fast](benchmarks.md) Promises framework which is fully conforming to
        console.log('v is:', v);
        if(v > 10) throw new RangeError('to large!');
        return v*2;
-   }).done(function(v){ 
+   }).done(function(v){
        // gets v*2 from above
        console.log('v is:', v)
    });
    p.fulfill(142); // => v is: 142, "Sorry: [RangeError:'to large']"
 ```
 
+## uP.catch(onError:Function)
+
+  Terminates chain and catches errors
+  
+  Example: Catch error
+```js
+   p = uP();
+   p.then(function(){ throw "an error occured";})
+    .done(function(v){
+       console.log("no error", v);
+     })
+    .catch(function(e){
+       console.log("error:",e);
+    });
+   p.resolve("hello there");
+```
+
 ## uP.fulfill(value:Object)
 
-  Fulfills a promise with a `value` 
+  Fulfills a promise with a `value`
   
    Example: fulfillment
 ```js
@@ -121,7 +144,7 @@ Provides a [fast](benchmarks.md) Promises framework which is fully conforming to
    p.fulfill(123);
 ```
 
-   
+  
    Example: multiple fulfillment values in array
 ```js
    p = uP();
@@ -129,9 +152,23 @@ Provides a [fast](benchmarks.md) Promises framework which is fully conforming to
    p.resolved; // => [1,2,3]
 ```
 
+  
+   Example: Pass through opaque arguments (experimental)
+```js
+   p = uP();
+   p.fulfill("hello","world");
+   p.then(function(x,o){
+       console.log(x,o[0]); // => "hello world"
+       o.push("!");
+       return "bye bye";
+   }).then(function(x,o){
+       console.log(x,o.join('')); // => "bye bye world!"
+   })
+```
+
 ## uP.resolve(value:Object)
 
-  Resolves a promise with a `value` yielded from another promise 
+  Resolves a promise with a `value` yielded from another promise
   
    Example: resolve literal value
 ```js
@@ -139,6 +176,7 @@ Provides a [fast](benchmarks.md) Promises framework which is fully conforming to
    p.resolve(123); // fulfills promise with 123
 ```
 
+  
    Example: resolve value from another pending promise
 ```js
    p1 = uP();
@@ -162,6 +200,24 @@ Provides a [fast](benchmarks.md) Promises framework which is fully conforming to
    p.reject('some error'); // outputs => 'error: some error'
 ```
 
+## uP.progress(arguments:Object)
+
+  Notifies attached handlers
+  
+   Example:
+```js
+   p = uP();
+   p.then(function(ok){
+      console.log("ok:",ok);
+   }, function(error){
+      console.log("error:",error);
+   }, function(notify){
+      console.log(notify);
+   });
+   p.progress("almost done"); // optputs => 'almost done'
+   p.reject('some error'); // outputs => 'error: some error'
+```
+
 ## uP.timeout(time:Number, callback:Function)
 
   Timeout a pending promise and invoke callback function on timeout.
@@ -175,6 +231,7 @@ Provides a [fast](benchmarks.md) Promises framework which is fully conforming to
    // ... after 5 secs ... => Aborted: |RangeError: 'exceeded timeout']
 ```
 
+  
   Example: cancel timeout
 ```js
    p.timeout(5000);
@@ -189,14 +246,14 @@ Provides a [fast](benchmarks.md) Promises framework which is fully conforming to
 ```js
    p = Promise();
    c = p.wrap(Array);
-   c(1,2,3); // => calls constructor and fulfills promise 
+   c(1,2,3); // => calls constructor and fulfills promise
    p.resolved; // => [1,2,3]
 ```
 
 ## uP.defer()
 
   Deferres a task and fulfills with return value.
-  The process may also return a promise itself which to wait on.  
+  The process may also return a promise itself which to wait on.
   
   Example: Make readFileSync async
 ```js
@@ -211,7 +268,7 @@ Provides a [fast](benchmarks.md) Promises framework which is fully conforming to
 
 ## uP.async()
 
-  Adapted for nodejs style functions expecting a callback. 
+  Adapted for nodejs style functions expecting a callback.
   
   Example: make readFile async
 ```js
@@ -224,10 +281,21 @@ Provides a [fast](benchmarks.md) Promises framework which is fully conforming to
    });
 ```
 
+## uP.nodejs()
+
+  Resolves promise with a nodejs style callback and passes return value from callback down the chain.
+  
+  Example:
+```js
+   p = Promise();
+   p.nodejs(callback);
+   p.fulfill("test");
+```
+
 ## uP.join(promises:Array)
 
   Joins promises and collects results into an array.
-  If any of the promises are rejected the chain is also rejected.  
+  If any of the promises are rejected the chain is also rejected.
   
   Example: join with two promises
 ```js
@@ -240,6 +308,10 @@ Provides a [fast](benchmarks.md) Promises framework which is fully conforming to
        console.log('error=',err);
    });
    b.fulfill('world');
-   a.fulfill('hello'); 
+   a.fulfill('hello');
    c.fulfill('!'); // => 'hello world !''
 ```
+
+## resolver()
+
+  Resolver function, yields a promised value to handlers

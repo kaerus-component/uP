@@ -156,7 +156,28 @@ var task = require('microtask'); // nextTick shim
             });
         }
     };
-
+    
+    /**
+     * Terminates chain and catches errors
+     *
+     * Example: Catch error
+     *      p = uP();
+     *      p.then(function(){ throw "an error occured";})
+     *       .done(function(v){
+     *          console.log("no error", v);
+     *        })
+     *       .catch(function(e){
+     *          console.log("error:",e);
+     *       });
+     *      p.resolve("hello there");
+     *
+     * @param {Function} onError callback
+     * @return undefined 
+     * @api public
+     */
+    uP.prototype.catch = function(error){
+	this.done(undefined,error);
+    };
     /**
      * Fulfills a promise with a `value`
      *
