@@ -636,7 +636,7 @@ var task = require('microtask'); // nextTick shim
     Promise.prototype.join = function(j){
         var p = this,
             y = [],
-            u = new this.constructor().resolve(p).then(function(v){y[0] = v;});
+            u = new Promise().resolve(p).then(function(v){y[0] = v;});
 
         if(arguments.length > 1) {
             j = slice.call(arguments);
@@ -644,10 +644,14 @@ var task = require('microtask'); // nextTick shim
 
         if(!isArray(j)) j = [j];
 
+	function stop(error){
+	    u.reject(error);
+	}
+	
         function collect(i){
-            j[i].done(function(v){
+            j[i].then(function(v){
                 y[i+1] = v;
-            },u.reject);
+            }).catch(stop);
 
             return function(){return j[i];};
         }
@@ -658,7 +662,6 @@ var task = require('microtask'); // nextTick shim
 
         return u.then(function(){return y;});
     };
-
 
     /* Resolver function, yields a promised value to handlers */
     function traverse(_promise){
