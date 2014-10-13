@@ -1,8 +1,10 @@
+/*global require, global, window */
+
 /**
  * Provides A+ v1.1 compliant promises.
- * @module uP
+ * @module Promise
  * @name microPromise
- * @main uP
+ * @main Promise
  */
 
 var task = require('microtask'); // nextTick shim
@@ -15,30 +17,210 @@ var task = require('microtask'); // nextTick shim
     var slice = Array.prototype.slice,
         isArray = Array.isArray;
 
-    var uP = function Promise(proto){
+    var PENDING   = 0,   
+	FULFILLED = 1, 
+	REJECTED  = 2;  
+    
+    /**
+     * Promise constructor
+     * 
+     * @param {Object} [mixin] - Mixin promise into object
+     * @param {Function} [resolver] - Resolver function(resolve,reject,progress,timeout) 
+     * @return {Object} Promise
+     * @api public
+     */
+    function Promise(p){
         // object mixin
-        if(proto && typeof proto === 'object'){
-            for(var key in uP.prototype) proto[key] = uP.prototype[key];
-            proto._tuple = [];
-            return proto;
+        if(p && typeof p === 'object'){
+            for(var k in Promise.prototype)
+		p[k] = Promise.prototype[k];
+	    p._promise = {_chain:[]};
+
+	    return p;
         }
-
+	
+	// create new instance
         if(!(this instanceof Promise))
-            return new Promise(proto);
+            return new Promise(p);
 
-        this._tuple = [];
+	this._promise = {_chain: []};
 
         // resolver callback
-        if(typeof proto === 'function') {
-            proto(this.resolve,this.reject,this.progress,this.timeout);
+        if(typeof p === 'function') {
+            p(this.resolve,this.reject,this.progress,this.timeout);
         }
+    }
+
+    
+    Promise.resolver = function(p,r){
+
+	if(typeof r === 'function') {
+	    
+	    if(Promise.thenable(p)){
+		return r(p.resolve,p.reject,p.progress,p.timeout);
+	    }
+	    else if(p) {
+		return Promise.resolver(Promise(p),r);
+	    }
+	    else return new Promise(r);
+	}
+	
+	return new Promise(p);
     };
 
+    
+    /**
+     * Helper for identifying a promise-like objects or functions
+     * 
+     * @param {Object} p - Object or Function to test
+     * @return {Boolean} - Returns true if thenable or else false
+     */
+    Promise.thenable = function(p){
+	var then;
+	
+	if(p && (typeof p === 'object' || typeof p === 'function')){
+	    try { then = p.then; } catch (e) { return false; };
+	}
+	
+	return (typeof then === 'function');
+    };
+
+    
+    /**
+     * Wrap a promise around function or constructor
+     *
+     * Example: wrap an Array
+     *      p = Promise();
+     *      c = p.wrap(Array);
+     *      c(1,2,3); // => calls Array constructor and fulfills promise
+     *      p.resolved; // => [1,2,3]
+     *
+     * @return {Function} function to wrap
+     * @throws {Error} not wrappable
+     * @api public
+     */
+    Promise.wrap = function(func){
+        var p = new Promise();
+
+	if(!func) throw Error("Nothing to wrap!");
+	
+        return function(){
+            var args = slice.call(arguments), ret;
+
+            if(Promise.thenable(func) && typeof func.resolve === 'function'){
+		func.resolve(args).then(p.fulfill, p.reject, p.progress, p.timeout);
+            } else if(typeof func.constructor === 'function'){
+                try{
+                    ret = new func.constructor.apply(p,args);
+                    p.resolve(ret);
+                } catch(err) {
+                    p.reject(err);
+                }
+            } else if(typeof func === 'function'){
+		try {
+		    ret = func.apply(p,args);
+		    p.resolve(ret);
+		} catch(err){
+		    p.reject(err);
+		}
+	    } else throw Error("not wrappable");
+
+            return p;
+        };
+    };
+
+    
+    /**
+     * Deferres a task and returns a pending promise fulfilled with the return value from task.
+     * The task may also return a promise itself which to wait on.
+     *
+     * Example: Make readFileSync async
+     *      fs = require('fs');
+     *      var asyncReadFile = Promise().defer(fs.readFileSync,'./index.js','utf-8');
+     *      asyncReadFile.then(function(data){
+     *          console.log(data)
+     *      },function(error){
+     *          console.log("Read error:", error);
+     *      });
+     *
+     * @return {Object} - returns a pending promise
+     * @api public
+     */
+    Promise.defer = function(){
+        var args = slice.call(arguments),
+            func = args.shift(),
+            wrap = Promise.wrap(func);
+
+	function deferred(){
+	    task(wrap,args);
+	}
+	task(wrap,args);
+
+        return wrap;
+    };
+
+    
+    /**
+     * Make a synchronous nodejs function asynchrounous.
+     *
+     * Example: make readFile async
+     *      fs = require('fs');
+     *      var asyncReadFile = Promise.async(fs.readFile);
+     *      asyncReadFile('package.json','utf8').then(function(data){
+     *          console.log(data);
+     *      },function(error){
+     *          console.log("Read error:", error);
+     *      });
+     *
+     * @return {Object} promise
+     * @api public
+     */
+    Promise.async = function(func){
+	
+	var wrap = Promise.wrap(func);
+	
+	function callback(err,ret){ if(err) throw err; return ret; }
+	
+        return function(){
+	    var args = slice.call(arguments);
+
+	    args.push(callback);
+
+	    task(wrap,args);
+	    
+	    return wrap; 
+	};
+    };
+    
+    Promise.prototype.isPending = function(){
+	return !this._promise._state;
+    };
+
+    Promise.prototype.isFulfilled = function(){
+	return this._promise._state === FULFILLED;
+    };
+
+    Promise.prototype.isRejected = function(){
+	return this._promise._state === REJECTED;
+    };
+
+    Promise.prototype.hasResolved = function(){
+	return !!this._promise._state;
+    };
+
+    Promise.prototype.valueOf = function(){
+	return this.isFulfilled() ? this._promise._value : undefined;
+    };
+
+    Promise.prototype.reason = function(){
+	return this.isRejected() ? this._promise._value : undefined;
+    };
+    
     /**
      * Attaches callback,errback,notify handlers and returns a promise
      *
      * Example: catch fulfillment or rejection
-     *      var p = uP();
+     *      var p = Promise();
      *      p.then(function(value){
      *          console.log("received:", value);
      *      },function(error){
@@ -77,20 +259,22 @@ var task = require('microtask'); // nextTick shim
      * @return {Object} a decendant promise
      * @api public
      */
-    uP.prototype.then = function(f,r,n){
+    Promise.prototype.then = function(f,r,n){
         var p = new this.constructor();
+	  
+	this._promise._chain.push([p,f,r,n]);
 
-        this._tuple[this._tuple.length] = [p,f,r,n];
-
-        if(this._state) task(resolver,[this._tuple,this._state,this._value,this._opaque]);
+	if(this._promise._state) task(traverse,[this._promise]);
 
         return p;
     };
+
+    
     /**
-     * Same semantic as `then` but spreads array into arguments
+     * Like `then` but spreads array into multiple arguments
      *
      * Example: Multiple fulfillment values
-     *      p = uP();
+     *      p = Promise();
      *      p.fulfill([1,2,3])
      *      p.spread(function(a,b,c){
      *          console.log(a,b,c); // => '1 2 3'
@@ -102,7 +286,7 @@ var task = require('microtask'); // nextTick shim
      * @return {Object} a decendant promise
      * @api public
      */
-    uP.prototype.spread = function(f,r,n){
+    Promise.prototype.spread = function(f,r,n){
         function s(v,a){
             if(!isArray(v)) v = [v];
             return f.apply(f,v.concat(a));
@@ -110,8 +294,10 @@ var task = require('microtask'); // nextTick shim
 
         return this.then(s,r,n);
     };
+
+    
     /**
-     * Same as `then` but terminates a promise chain and calls onerror / throws error on unhandled Errors
+     * Terminates chain of promises, calls onerror or throws on unhandled Errors
      *
      * Example: capture error with done
      *      p.then(function(v){
@@ -122,8 +308,10 @@ var task = require('microtask'); // nextTick shim
      *          // gets v*2 from above
      *          console.log('v is:', v)
      *      });
+     *
      *      p.fulfill(142); // => v is: 142, throws [RangeError:'to large']
-     * Example: use onerror handler
+     *
+     * Example: define onerror handler defined on promise
      *      p.onerror = function(error){ console.log("Sorry:",error) };
      *      p.then(function(v){
      *          console.log('v is:', v);
@@ -140,19 +328,18 @@ var task = require('microtask'); // nextTick shim
      * @param {Function} onNotify callback
      * @api public
      */
-    uP.prototype.done = function(f,r,n){
+    Promise.prototype.done = function(f,r,n){
+	
+        var self = this, p = this.then(f,catchError,n);
 
-        if(typeof r !== 'function') r = handleError;
-
-        var self = this, p = this.then(f,r,n);
-
-        function handleError(e){
+        function catchError(e){
             task(function(){
-                if(typeof self.onerror === 'function'){
+		if(typeof r === 'function') r(e);
+                else if(typeof self.onerror === 'function'){
                     self.onerror(e);
-                } else {
-                    throw e;
-                }
+                } else if(Promise.onerror === 'function'){
+                    Promise.onerror(e);
+                } else throw e;
             });
         }
     };
@@ -160,8 +347,9 @@ var task = require('microtask'); // nextTick shim
     /**
      * Terminates chain and catches errors
      *
+     *
      * Example: Catch error
-     *      p = uP();
+     *      p = Promise();
      *      p.then(function(v){
      *          console.log("someone said:", v);  //-> "Hello there"
      *          return "boom!";
@@ -176,23 +364,24 @@ var task = require('microtask'); // nextTick shim
      * @return undefined 
      * @api public
      */
-    uP.prototype.catch = function(error){
+    Promise.prototype.catch = function(error){
 	this.done(undefined,error);
     };
     /**
      * Fulfills a promise with a `value`
      *
+     *
      *  Example: fulfillment
-     *      p = uP();
+     *      p = Promise();
      *      p.fulfill(123);
      *
      *  Example: multiple fulfillment values in array
-     *      p = uP();
+     *      p = Promise();
      *      p.fulfill([1,2,3]);
      *      p.resolved; // => [1,2,3]
      *
      *  Example: Pass through opaque arguments (experimental)
-     *      p = uP();
+     *      p = Promise();
      *      p.fulfill("hello","world");
      *      p.then(function(x,o){
      *          console.log(x,o[0]); // => "hello world"
@@ -206,43 +395,90 @@ var task = require('microtask'); // nextTick shim
      * @return {Object} promise
      * @api public
      */
-    uP.prototype.fulfill = function(x,o){
-        if(!this._state){
-            task(resolver,[this._tuple,this._state = 1,this._value = x, this._opaque = o]);
-        }
+    Promise.prototype.fulfill = function(value,opaque){
 
+	if(!this._promise._state) {
+	    this._promise._state = FULFILLED;
+	    this._promise._value = value;
+	    this._promise._opaque = opaque;
+	    
+	    task(traverse,[this._promise]);
+	}
+	
         return this;
     };
 
+
     /**
-     * Resolves a promise with a `value` yielded from another promise
+     * Rejects promise with a `reason`
      *
-     *  Example: resolve literal value
-     *      p = uP();
-     *      p.resolve(123); // fulfills promise with 123
+     *  Example:
+     *      p = Promise();
+     *      p.then(function(ok){
+     *         console.log("ok:",ok);
+     *      }, function(error){
+     *         console.log("error:",error);
+     *      });
+     *      p.reject('some error'); // outputs => 'error: some error'
      *
-     *  Example: resolve value from another pending promise
-     *      p1 = uP();
-     *      p2 = uP();
-     *      p1.resolve(p2);
-     *      p2.fulfill(123) // => p2._value = 123
-     *
-     * @param {Object} value
+     * @param {Object} reason
      * @return {Object} promise
      * @api public
      */
-    uP.prototype.resolve = function(x,o){
+    Promise.prototype.reject = function(reason,opaque){
+	
+	if(!this._promise._state){
+	    this._promise._state = REJECTED;
+	    this._promise._value = reason;
+	    this._promise._opaque = opaque;
+	    
+	    task(traverse,[this._promise]);
+	}
+	
+        return this;
+    };
+
+    function transition(state,value,opaque){
+        if(!this._promise._state && state){
+
+	    this._promise._state = state;
+	    this._promise._value = value;
+	    this._promise._opaque = opaque;
+	    
+            task(traverse,[this._promise]);
+        }
+    }
+
+    /**
+     * Resolves a promise and performs unwrapping if necessary  
+     *
+     *
+     *  Example: resolve a literal
+     *      p = Promise();
+     *      p.resolve(123); // fulfills promise to 123
+     *
+     *  Example: resolve value from pending promise
+     *      p1 = Promise();
+     *      p2 = Promise();
+     *      p1.resolve(p2);
+     *      p2.fulfill(123) // => p1 fulfills to 123
+     *
+     * @param {Object} value - Promise or literal
+     * @return {Object} promise
+     * @api public
+     */
+    Promise.prototype.resolve = function(x,o){
         var then, z, p = this;
 
-        if(!this._state){
-            if(x === p) p.reject(new TypeError("x === p"));
+        if(!this._promise._state){
+            if(x === p) p.reject(new TypeError("Promise cannot resolve itself!"));
 
             if(x && (typeof x === 'object' || typeof x === 'function')){
                 try { then = x.then; } catch(e){ p.reject(e); }
             }
 
             if(typeof then !== 'function'){
-                task(resolver,[this._tuple,this._state = 1,this._value = x, this._opaque = o]);
+		this.fulfill(x,o);
             } else if(!z){
                 try {
                     then.apply(x,[function(y){
@@ -268,35 +504,12 @@ var task = require('microtask'); // nextTick shim
         return this;
     };
 
-    /**
-     * Rejects promise with a `reason`
-     *
-     *  Example:
-     *      p = uP();
-     *      p.then(function(ok){
-     *         console.log("ok:",ok);
-     *      }, function(error){
-     *         console.log("error:",error);
-     *      });
-     *      p.reject('some error'); // outputs => 'error: some error'
-     *
-     * @param {Object} reason
-     * @return {Object} promise
-     * @api public
-     */
-    uP.prototype.reject = function(x,o){
-        if(!this._state){
-            task(resolver,[this._tuple,this._state = 2,this._value = x, this._opaque = o]);
-        }
-
-        return this;
-    };
 
     /**
      * Notifies attached handlers
      *
      *  Example:
-     *      p = uP();
+     *      p = Promise();
      *      p.then(function(ok){
      *         console.log("ok:",ok);
      *      }, function(error){
@@ -310,11 +523,14 @@ var task = require('microtask'); // nextTick shim
      * @param {Object} arguments
      * @api public
      */
-    uP.prototype.progress = function(){
-        var args = slice.call(arguments), fn;
-        for(var i = 0, l = this._tuple.length; i < l; i++){
-            if(typeof (fn = this._tuple[i][3]) === 'function')
-                fn.apply(this,arguments);
+    Promise.prototype.progress = function(){
+        var notify, tuples = this._promise._chain;
+
+	if(!tuples) return;
+
+	for(var i = 0, l = tuples.length; i < l; i++){
+            if(typeof (notify = tuples[i][NOTIFY]) === 'function')
+                notify.apply(this,arguments);
         }
     };
 
@@ -332,25 +548,27 @@ var task = require('microtask'); // nextTick shim
      *      p.timeout(5000);
      *      p.timeout(null); // timeout cancelled
      *
-     * @param {Number} time timeout value in ms or null to clear timeout
-     * @param {Function} callback optional timeout function callback
+     * @param {Number} time - timeout value in ms or null to clear timeout
+     * @param {Function} callback - optional timeout function callback
      * @throws {RangeError} If exceeded timeout
      * @return {Object} promise
      * @api public
      */
-    uP.prototype.timeout = function(msec,func){
+    Promise.prototype.timeout = function(msec,func){
         var p = this;
 
         if(msec === null) {
-            clearTimeout(p._timer);
-            p._timer = null;
-        } else if(!p._timer){
-            p._timer = setTimeout(onTimeout,msec);
+            if(this._promise._timeout)
+		root.clearTimeout(this._promise._timeout);
+	    
+            this._promise._timeout = null;
+        } else if(!this._promise._timeout){
+            this._promise._timeout = root.setTimeout(onTimeout,msec);
         }
 
         function onTimeout(){
             var e = new RangeError("exceeded timeout");
-            if(!p._state) {
+            if(!this._promise._state) {
                 if(typeof func === 'function') func(p);
                 else if(typeof p.onerror === 'function') p.onerror(e);
                 else throw e;
@@ -361,107 +579,30 @@ var task = require('microtask'); // nextTick shim
     };
 
     /**
-     * Wraps a `proto` into a promise
-     *
-     * Example: wrap an Array
-     *      p = Promise();
-     *      c = p.wrap(Array);
-     *      c(1,2,3); // => calls constructor and fulfills promise
-     *      p.resolved; // => [1,2,3]
-     *
-     * @param {Object} proto
-     * @return {Object} promise
-     * @api public
-     */
-    uP.prototype.wrap = function(proto){
-        var p = this;
-
-        return function(){
-            var args = slice.call(arguments), ret;
-
-            if(proto instanceof uP){
-                proto.fulfill(args).then(p.fulfill,p.reject);
-            } else if(typeof proto === 'function'){
-                try{
-                    ret = proto.apply(p,args);
-                    p.resolve(ret);
-                } catch(err) {
-                    p.reject(err);
-                }
-            }
-
-            return p;
-        };
-    };
-    /**
-     * Deferres a task and fulfills with return value.
-     * The process may also return a promise itself which to wait on.
-     *
-     * Example: Make readFileSync async
-     *      fs = require('fs');
-     *      var asyncReadFile = uP().defer(fs.readFileSync,'./index.js','utf-8');
-     *      asyncReadFile.then(function(data){
-     *          console.log(data)
-     *      },function(error){
-     *          console.log("Read error:", error);
-     *      });
-     *
-     * @return {Object} promise
-     * @api public
-     */
-    uP.prototype.defer = function(){
-        var args = slice.call(arguments),
-            proc = args.shift(),
-            p = this;
-
-        if(typeof proc === 'function'){
-            task(enclose,args);
-        }
-
-        function enclose(){
-            try { p.resolve(proc.apply(p,args)); } catch(err) { p.reject(err); }
-        }
-
-        return this;
-    };
-    /**
-     * Adapted for nodejs style functions expecting a callback.
-     *
-     * Example: make readFile async
-     *      fs = require('fs');
-     *      var asyncReadFile = uP.async(fs.readFile,'./index.js','utf-8');
-     *      asyncReadFile.then(function(data){
-     *          console.log(data);
-     *      },function(error){
-     *          console.log("Read error:", error);
-     *      });
-     *
-     * @return {Object} promise
-     * @api public
-     */
-    uP.prototype.async = function(){
-        var p = this,
-            args = slice.call(arguments);
-
-        function callback(err,ret){ if(!err) p.fulfill(ret); else p.reject(ret); }
-
-        args[args.length] = callback;
-
-        return this.defer.apply(this,args);
-    };
-
-    /**
-     * Resolves promise with a nodejs style callback and passes return value from callback down the chain.
+     * Resolves promise to a nodejs styled callback function(err,ret) 
+     * and passes the callbacks return value down the chain.
      *
      * Example:
-     *      p = Promise();
-     *      p.nodejs(callback);
-     *      p.fulfill("test");
+     *      function cb(err,ret){
+     *        if(err) console.log("error(%s):",err,ret);
+     *        else console.log("success:", ret);
      *
+     *        return "nice";
+     *      }
+     *
+     *      p = Promise();
+     *      p.nodejs(cb)
+     *       .then(function(cbret){ 
+     *         console.log("callback says:", cbret); //-> callback says: nice 
+     *      });
+     *
+     *      p.fulfill("ok"); //-> success: ok
+     *
+     * @param {Function} callback - Callback function
      * @return {Object} promise
      * @api public
      */
-    uP.prototype.nodejs = function(callback){
+    Promise.prototype.nodejs = function(callback){
         return this.then(function(value,opaque){
             return callback(null,value,opaque);
         },function(reason,opaque){
@@ -469,16 +610,16 @@ var task = require('microtask'); // nextTick shim
         },function(progress){
             return callback(0,progress);
         });
-    };
+    };    
 
     /**
      * Joins promises and collects results into an array.
      * If any of the promises are rejected the chain is also rejected.
      *
      * Example: join with two promises
-     *      a = uP();
-     *      b = uP();
-     *      c = uP();
+     *      a = Promise();
+     *      b = Promise();
+     *      c = Promise();
      *      a.join([b,c]).spread(function(a,b,c){
      *          console.log(a,b,c);
      *      },function(err){
@@ -492,7 +633,7 @@ var task = require('microtask'); // nextTick shim
      * @return {Object} promise
      * @api public
      */
-    uP.prototype.join = function(j){
+    Promise.prototype.join = function(j){
         var p = this,
             y = [],
             u = new this.constructor().resolve(p).then(function(v){y[0] = v;});
@@ -520,31 +661,36 @@ var task = require('microtask'); // nextTick shim
 
 
     /* Resolver function, yields a promised value to handlers */
-    function resolver(tuple,state,value,opaque){
-        var t, p, h, x = value;
+    function traverse(_promise){
+	var l, tuple = _promise._chain;
+	
+	if(!tuple.length) return;
 
+	var t,p,h,v = _promise._value;
+	
         while((t = tuple.shift())) {
-            p = t[0];
-            h = t[state];
+	    p = t[0];
+            h = t[_promise._state];
 
             if(typeof h === 'function') {
                 try {
-                    x = h(value,opaque);
-                    p.resolve(x,opaque);
+                    v = h(_promise._value,_promise._opaque);
+		    p.resolve(v,_promise._opaque);
                 } catch(e) {
-                    p.reject(e);
+		    p.reject(e);
                 }
             } else {
-                p._state = state;
-                p._value = x;
-                p._opaque = opaque;
-                task(resolver,[p._tuple, p._state, p._value, p._opaque]);
+		p._promise._state = _promise._state;
+		p._promise._value = v;
+		p._promise._opaque = _promise._opaque;
+		
+		task(traverse,[p._promise]);
             }
         }
     }
 
     /* expose this module */
-    if(module && module.exports) module.exports = uP;
-    else if(typeof define ==='function' && define.amd) define(uP);
-    else root.uP = uP;
+    if(module && module.exports) module.exports = Promise;
+    else if(typeof define ==='function' && define.amd) define(Promise);
+    else root.Promise = Promise;
 }(this));
