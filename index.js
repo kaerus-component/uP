@@ -51,7 +51,14 @@ var task = require('microtask'); // nextTick shim
         }
     }
 
-    
+    /**
+     * Promise resolver
+     * 
+     * @param {Object} [Promise|Object|Function]  
+     * @param {Function} [resolver] - Resolver function(resolve,reject,progress,timeout) 
+     * @return {Object} Promise
+     * @api public
+     */
     Promise.resolver = function(p,r){
 
 	if(typeof r === 'function') {
@@ -192,26 +199,56 @@ var task = require('microtask'); // nextTick shim
 	};
     };
     
+    /**
+     * Check if promise is pending
+     * 
+     * @return {Boolean} - Returns true if pending or else false
+     */
     Promise.prototype.isPending = function(){
 	return !this._promise._state;
     };
 
+    /**
+     * Check if promise is fulfilled
+     * 
+     * @return {Boolean} - Returns true if pending or else false
+     */
     Promise.prototype.isFulfilled = function(){
 	return this._promise._state === FULFILLED;
     };
 
+    /**
+     * Check if promise is rejeced
+     * 
+     * @return {Boolean} - Returns true if pending or else false
+     */ 
     Promise.prototype.isRejected = function(){
 	return this._promise._state === REJECTED;
     };
 
+    /**
+     * Check if promise has resolved
+     * 
+     * @return {Boolean} - Returns true if pending or else false
+     */ 
     Promise.prototype.hasResolved = function(){
 	return !!this._promise._state;
     };
 
+    /**
+     * Get value if promise has been fulfilled
+     * 
+     * @return {Boolean} - Returns true if pending or else false
+     */
     Promise.prototype.valueOf = function(){
 	return this.isFulfilled() ? this._promise._value : undefined;
     };
 
+    /**
+     * Get reason if promise has rejected
+     * 
+     * @return {Boolean} - Returns true if pending or else false
+     */
     Promise.prototype.reason = function(){
 	return this.isRejected() ? this._promise._value : undefined;
     };

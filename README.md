@@ -7,33 +7,121 @@
 # microPromise(uP) - A+ v1.1 compliant promises
 
   - [task](#task)
-  - [uP.then()](#upthenonfulfillfunctiononrejectfunctiononnotifyfunction)
-  - [uP.spread()](#upspreadonfulfillfunctiononrejectfunctiononnotifyfunction)
-  - [uP.done()](#updoneonfulfillfunctiononrejectfunctiononnotifyfunction)
-  - [uP.catch()](#upcatchonerrorfunction)
-  - [uP.fulfill()](#upfulfillvalueobject)
-  - [uP.resolve()](#upresolvevalueobject)
-  - [uP.reject()](#uprejectreasonobject)
-  - [uP.progress()](#upprogressargumentsobject)
-  - [uP.timeout()](#uptimeouttimenumbercallbackfunction)
-  - [uP.wrap()](#upwrapprotoobject)
-  - [uP.defer()](#updefer)
-  - [uP.async()](#upasync)
-  - [uP.nodejs()](#upnodejs)
-  - [uP.join()](#upjoinpromisesarray)
-  - [resolver()](#resolver)
+  - [Promise()](#promisemixinobjectresolverfunction)
+  - [Promise.resolver()](#promiseresolverpromiseobjectfunctionobjectresolverfunction)
+  - [Promise.thenable()](#promisethenablepobject)
+  - [Promise.wrap()](#promisewrap)
+  - [Promise.defer()](#promisedefer)
+  - [Promise.async()](#promiseasync)
+  - [Promise.isPending()](#promiseispending)
+  - [Promise.isFulfilled()](#promiseisfulfilled)
+  - [Promise.isRejected()](#promiseisrejected)
+  - [Promise.hasResolved()](#promisehasresolved)
+  - [Promise.valueOf()](#promisevalueof)
+  - [Promise.reason()](#promisereason)
+  - [Promise.then()](#promisethenonfulfillfunctiononrejectfunctiononnotifyfunction)
+  - [Promise.spread()](#promisespreadonfulfillfunctiononrejectfunctiononnotifyfunction)
+  - [Promise.done()](#promisedoneonfulfillfunctiononrejectfunctiononnotifyfunction)
+  - [Promise.catch()](#promisecatchonerrorfunction)
+  - [Promise.fulfill()](#promisefulfillvalueobject)
+  - [Promise.reject()](#promiserejectreasonobject)
+  - [Promise.resolve()](#promiseresolvevalueobject)
+  - [Promise.progress()](#promiseprogressargumentsobject)
+  - [Promise.timeout()](#promisetimeouttimenumbercallbackfunction)
+  - [Promise.nodejs()](#promisenodejscallbackfunction)
+  - [Promise.join()](#promisejoinpromisesarray)
+  - [traverse()](#traverse)
 
 ## task
 
   Provides A+ v1.1 compliant promises.
 
-## uP.then(onFulfill:Function, onReject:Function, onNotify:Function)
+## Promise([mixin]:Object, [resolver]:Function)
+
+  Promise constructor
+
+## Promise.resolver([Promise|Object|Function]:Object, [resolver]:Function)
+
+  Promise resolver
+
+## Promise.thenable(p:Object)
+
+  Helper for identifying a promise-like objects or functions
+
+## Promise.wrap()
+
+  Wrap a promise around function or constructor
+  
+  Example: wrap an Array
+```js
+   p = Promise();
+   c = p.wrap(Array);
+   c(1,2,3); // => calls Array constructor and fulfills promise
+   p.resolved; // => [1,2,3]
+```
+
+## Promise.defer()
+
+  Deferres a task and returns a pending promise fulfilled with the return value from task.
+  The task may also return a promise itself which to wait on.
+  
+  Example: Make readFileSync async
+```js
+   fs = require('fs');
+   var asyncReadFile = Promise().defer(fs.readFileSync,'./index.js','utf-8');
+   asyncReadFile.then(function(data){
+       console.log(data)
+   },function(error){
+       console.log("Read error:", error);
+   });
+```
+
+## Promise.async()
+
+  Make a synchronous nodejs function asynchrounous.
+  
+  Example: make readFile async
+```js
+   fs = require('fs');
+   var asyncReadFile = Promise.async(fs.readFile);
+   asyncReadFile('package.json','utf8').then(function(data){
+       console.log(data);
+   },function(error){
+       console.log("Read error:", error);
+   });
+```
+
+## Promise.isPending()
+
+  Check if promise is pending
+
+## Promise.isFulfilled()
+
+  Check if promise is fulfilled
+
+## Promise.isRejected()
+
+  Check if promise is rejeced
+
+## Promise.hasResolved()
+
+  Check if promise has resolved
+
+## Promise.valueOf()
+
+  Get value if promise has been fulfilled
+
+## Promise.reason()
+
+  Get reason if promise has rejected
+
+## Promise.then(onFulfill:Function, onReject:Function, onNotify:Function)
 
   Attaches callback,errback,notify handlers and returns a promise
   
   Example: catch fulfillment or rejection
 ```js
-   var p = uP();
+   var p = Promise();
    p.then(function(value){
        console.log("received:", value);
    },function(error){
@@ -73,22 +161,22 @@
    p.fulfill(-5); // => we got: 5
 ```
 
-## uP.spread(onFulfill:Function, onReject:Function, onNotify:Function)
+## Promise.spread(onFulfill:Function, onReject:Function, onNotify:Function)
 
-  Same semantic as `then` but spreads array into arguments
+  Like `then` but spreads array into multiple arguments
   
   Example: Multiple fulfillment values
 ```js
-   p = uP();
+   p = Promise();
    p.fulfill([1,2,3])
    p.spread(function(a,b,c){
        console.log(a,b,c); // => '1 2 3'
    });
 ```
 
-## uP.done(onFulfill:Function, onReject:Function, onNotify:Function)
+## Promise.done(onFulfill:Function, onReject:Function, onNotify:Function)
 
-  Same as `then` but terminates a promise chain and calls onerror / throws error on unhandled Errors
+  Terminates chain of promises, calls onerror or throws on unhandled Errors
   
   Example: capture error with done
 ```js
@@ -100,10 +188,15 @@
        // gets v*2 from above
        console.log('v is:', v)
    });
+```
+
+  
+```js
    p.fulfill(142); // => v is: 142, throws [RangeError:'to large']
 ```
 
-  Example: use onerror handler
+  
+  Example: define onerror handler defined on promise
 ```js
    p.onerror = function(error){ console.log("Sorry:",error) };
    p.then(function(v){
@@ -117,13 +210,14 @@
    p.fulfill(142); // => v is: 142, "Sorry: [RangeError:'to large']"
 ```
 
-## uP.catch(onError:Function)
+## Promise.catch(onError:Function)
 
   Terminates chain and catches errors
   
+  
   Example: Catch error
 ```js
-   p = uP();
+   p = Promise();
    p.then(function(v){
        console.log("someone said:", v);  //-> "Hello there"
        return "boom!";
@@ -135,20 +229,21 @@
    p.resolve("Hello there");
 ```
 
-## uP.fulfill(value:Object)
+## Promise.fulfill(value:Object)
 
   Fulfills a promise with a `value`
   
+  
    Example: fulfillment
 ```js
-   p = uP();
+   p = Promise();
    p.fulfill(123);
 ```
 
   
    Example: multiple fulfillment values in array
 ```js
-   p = uP();
+   p = Promise();
    p.fulfill([1,2,3]);
    p.resolved; // => [1,2,3]
 ```
@@ -156,7 +251,7 @@
   
    Example: Pass through opaque arguments (experimental)
 ```js
-   p = uP();
+   p = Promise();
    p.fulfill("hello","world");
    p.then(function(x,o){
        console.log(x,o[0]); // => "hello world"
@@ -167,32 +262,13 @@
    })
 ```
 
-## uP.resolve(value:Object)
-
-  Resolves a promise with a `value` yielded from another promise
-  
-   Example: resolve literal value
-```js
-   p = uP();
-   p.resolve(123); // fulfills promise with 123
-```
-
-  
-   Example: resolve value from another pending promise
-```js
-   p1 = uP();
-   p2 = uP();
-   p1.resolve(p2);
-   p2.fulfill(123) // => p2._value = 123
-```
-
-## uP.reject(reason:Object)
+## Promise.reject(reason:Object)
 
   Rejects promise with a `reason`
   
    Example:
 ```js
-   p = uP();
+   p = Promise();
    p.then(function(ok){
       console.log("ok:",ok);
    }, function(error){
@@ -201,13 +277,33 @@
    p.reject('some error'); // outputs => 'error: some error'
 ```
 
-## uP.progress(arguments:Object)
+## Promise.resolve(value:Object)
+
+  Resolves a promise and performs unwrapping if necessary  
+  
+  
+   Example: resolve a literal
+```js
+   p = Promise();
+   p.resolve(123); // fulfills promise to 123
+```
+
+  
+   Example: resolve value from pending promise
+```js
+   p1 = Promise();
+   p2 = Promise();
+   p1.resolve(p2);
+   p2.fulfill(123) // => p1 fulfills to 123
+```
+
+## Promise.progress(arguments:Object)
 
   Notifies attached handlers
   
    Example:
 ```js
-   p = uP();
+   p = Promise();
    p.then(function(ok){
       console.log("ok:",ok);
    }, function(error){
@@ -219,7 +315,7 @@
    p.reject('some error'); // outputs => 'error: some error'
 ```
 
-## uP.timeout(time:Number, callback:Function)
+## Promise.timeout(time:Number, callback:Function)
 
   Timeout a pending promise and invoke callback function on timeout.
   Without a callback it throws a RangeError('exceeded timeout').
@@ -239,70 +335,48 @@
    p.timeout(null); // timeout cancelled
 ```
 
-## uP.wrap(proto:Object)
+## Promise.nodejs(callback:Function)
 
-  Wraps a `proto` into a promise
-  
-  Example: wrap an Array
-```js
-   p = Promise();
-   c = p.wrap(Array);
-   c(1,2,3); // => calls constructor and fulfills promise
-   p.resolved; // => [1,2,3]
-```
-
-## uP.defer()
-
-  Deferres a task and fulfills with return value.
-  The process may also return a promise itself which to wait on.
-  
-  Example: Make readFileSync async
-```js
-   fs = require('fs');
-   var asyncReadFile = uP().defer(fs.readFileSync,'./index.js','utf-8');
-   asyncReadFile.then(function(data){
-       console.log(data)
-   },function(error){
-       console.log("Read error:", error);
-   });
-```
-
-## uP.async()
-
-  Adapted for nodejs style functions expecting a callback.
-  
-  Example: make readFile async
-```js
-   fs = require('fs');
-   var asyncReadFile = uP.async(fs.readFile,'./index.js','utf-8');
-   asyncReadFile.then(function(data){
-       console.log(data);
-   },function(error){
-       console.log("Read error:", error);
-   });
-```
-
-## uP.nodejs()
-
-  Resolves promise with a nodejs style callback and passes return value from callback down the chain.
+  Resolves promise to a nodejs styled callback function(err,ret) 
+  and passes the callbacks return value down the chain.
   
   Example:
 ```js
-   p = Promise();
-   p.nodejs(callback);
-   p.fulfill("test");
+   function cb(err,ret){
+     if(err) console.log("error(%s):",err,ret);
+     else console.log("success:", ret);
 ```
 
-## uP.join(promises:Array)
+  
+```js
+     return "nice";
+   }
+```
+
+  
+```js
+   p = Promise();
+   p.nodejs(cb)
+    .then(function(cbret){ 
+      console.log("callback says:", cbret); //-> callback says: nice 
+   });
+```
+
+  
+```js
+   p.fulfill("ok"); //-> success: ok
+```
+
+## Promise.join(promises:Array)
 
   Joins promises and collects results into an array.
   If any of the promises are rejected the chain is also rejected.
   
   Example: join with two promises
 ```js
-   a = uP();
-   b = uP();
-   c = uP();
+   a = Promise();
+   b = Promise();
+   c = Promise();
    a.join([b,c]).spread(function(a,b,c){
        console.log(a,b,c);
    },function(err){
@@ -313,6 +387,6 @@
    c.fulfill('!'); // => 'hello world !''
 ```
 
-## resolver()
+## traverse()
 
   Resolver function, yields a promised value to handlers
