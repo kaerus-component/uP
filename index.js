@@ -398,7 +398,8 @@ var task = require('microtask'); // nextTick shim
 	    else throw e;
 	});
     };
-    
+
+
     /**
      * Terminates chain and catches errors
      *
@@ -646,7 +647,7 @@ var task = require('microtask'); // nextTick shim
      *      }
      *
      *      p = Promise();
-     *      p.nodejs(cb)
+     *      p.callback(cb)
      *       .then(function(cbret){ 
      *         console.log("callback says:", cbret); //-> callback says: nice 
      *      });
@@ -657,7 +658,7 @@ var task = require('microtask'); // nextTick shim
      * @return {Object} promise
      * @api public
      */
-    Promise.prototype.nodejs = function(callback){
+    Promise.prototype.callback = function(callback){
         return this.then(function(value,opaque){
             return callback(null,value,opaque);
         },function(reason,opaque){

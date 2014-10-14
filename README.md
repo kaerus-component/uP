@@ -29,7 +29,7 @@
   - [Promise.resolve()](#promiseresolvevalueobject)
   - [Promise.progress()](#promiseprogressargumentsobject)
   - [Promise.timeout()](#promisetimeouttimenumbercallbackfunction)
-  - [Promise.nodejs()](#promisenodejscallbackfunction)
+  - [Promise.callback()](#promisecallbackcallbackfunction)
   - [Promise.join()](#promisejoinpromisesarray)
   - [traverse()](#traverse)
 
@@ -340,7 +340,7 @@
    p.timeout(null); // timeout cancelled
 ```
 
-## Promise.nodejs(callback:Function)
+## Promise.callback(callback:Function)
 
   Resolves promise to a nodejs styled callback function(err,ret) 
   and passes the callbacks return value down the chain.
@@ -361,7 +361,7 @@
   
 ```js
    p = Promise();
-   p.nodejs(cb)
+   p.callback(cb)
     .then(function(cbret){ 
       console.log("callback says:", cbret); //-> callback says: nice 
    });
