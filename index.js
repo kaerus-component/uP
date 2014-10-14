@@ -662,12 +662,15 @@ var task = require('microtask'); // nextTick shim
         return this.then(function(value,opaque){
             return callback(null,value,opaque);
         },function(reason,opaque){
-            return callback(reason,opaque);
+	    if(!(reason instanceof Error))
+		reason = new Error(reason);
+	    
+            return callback(reason);
         },function(progress){
             return callback(0,progress);
         });
-    };    
-
+    };  
+    
     /**
      * Joins promises and collects results into an array.
      * If any of the promises are rejected the chain is also rejected.
