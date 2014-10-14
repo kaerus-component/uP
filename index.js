@@ -380,6 +380,24 @@ var task = require('microtask'); // nextTick shim
             });
         }
     };
+
+    /** 
+     * Terminates chain, invokes a callback or throws Error on error 
+     *
+     * @param {Function} callback - Callback with value or Error object on error.
+     * @api public
+     */
+    Promise.prototype.end = function(callback){
+	
+	this.then(callback,function(e){
+	    if(!(e instanceof Error)){
+		e = new Error(e);
+	    }
+	    
+	    if(typeof callback === 'function') callback(e);
+	    else throw e;
+	});
+    };
     
     /**
      * Terminates chain and catches errors

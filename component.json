@@ -1,6 +1,6 @@
 {
   "name": "micropromise",
-  "version": "0.3.7",
+  "version": "0.4.2",
   "repo": "kaerus-component/uP",
   "description": "A+ micro promises",
   "keywords":[
@@ -9,7 +9,7 @@
 	"promises-aplus"
   ],
   "dependencies":{
-  	"kaerus-component/microTask": "0.1.4"
+  	"kaerus-component/microTask": "0.1.6"
   },
   "scripts": ["index.js"],
   "license": "Apache2_0"

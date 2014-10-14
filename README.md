@@ -22,6 +22,7 @@
   - [Promise.then()](#promisethenonfulfillfunctiononrejectfunctiononnotifyfunction)
   - [Promise.spread()](#promisespreadonfulfillfunctiononrejectfunctiononnotifyfunction)
   - [Promise.done()](#promisedoneonfulfillfunctiononrejectfunctiononnotifyfunction)
+  - [Promise.end()](#promiseendcallbackfunction)
   - [Promise.catch()](#promisecatchonerrorfunction)
   - [Promise.fulfill()](#promisefulfillvalueobject)
   - [Promise.reject()](#promiserejectreasonobject)
@@ -209,6 +210,10 @@
    });
    p.fulfill(142); // => v is: 142, "Sorry: [RangeError:'to large']"
 ```
+
+## Promise.end(callback:Function)
+
+  Terminates chain, invokes a callback or throws Error on error
 
 ## Promise.catch(onError:Function)
 
