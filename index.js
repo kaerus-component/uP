@@ -494,17 +494,6 @@ var task = require('microtask'); // nextTick shim
         return this;
     };
 
-    function transition(state,value,opaque){
-        if(!this._promise._state && state){
-
-	    this._promise._state = state;
-	    this._promise._value = value;
-	    this._promise._opaque = opaque;
-	    
-            task(traverse,[this._promise]);
-        }
-    }
-
     /**
      * Resolves a promise and performs unwrapping if necessary  
      *
@@ -662,14 +651,23 @@ var task = require('microtask'); // nextTick shim
         return this.then(function(value,opaque){
             return callback(null,value,opaque);
         },function(reason,opaque){
-	    if(!(reason instanceof Error))
-		reason = new Error(reason);
+	    var error = reason;
 	    
-            return callback(reason);
+	    if(!(error instanceof Error)){
+		if(typeof reason === 'object'){
+		    error = new Error(JSON.stringify(reason));
+		    for(var k in reason)
+			error[k] = reason[k];
+		} else {
+		    error = new Error(reason);
+		}
+	    }
+
+            return callback(error,opaque);
         },function(progress){
             return callback(0,progress);
         });
-    };  
+    };
     
     /**
      * Joins promises and collects results into an array.
