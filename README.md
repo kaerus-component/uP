@@ -217,7 +217,7 @@
 
 ## Promise.catch(onError:Function)
 
-  Terminates chain and catches errors
+  Catches errors, terminates promise chain and calls errBack handler.
   
   
   Example: Catch error

@@ -155,15 +155,22 @@ var task = require('microtask'); // nextTick shim
      */
     Promise.defer = function(){
         var args = slice.call(arguments),
-            func = args.shift(),
-            wrap = Promise.wrap(func);
+            f = args.shift(),
+            p = new Promise();
 
-	function deferred(){
-	    task(wrap,args);
-	}
-	task(wrap,args);
+        if(typeof f === 'function'){
+            task(enclose,args);
+        }
 
-        return wrap;
+        function enclose(){
+            try {
+		p.resolve(f.apply(p,args));
+	    } catch(err) {
+		p.reject(err);
+	    }
+        }
+
+        return p;
     };
 
     
@@ -365,8 +372,7 @@ var task = require('microtask'); // nextTick shim
      * @param {Function} onNotify callback
      * @api public
      */
-    Promise.prototype.done = function(f,r,n){
-	
+    Promise.prototype.done = function(f,r,n){	
         var self = this, p = this.then(f,catchError,n);
 
         function catchError(e){
@@ -401,7 +407,7 @@ var task = require('microtask'); // nextTick shim
 
 
     /**
-     * Terminates chain and catches errors
+     * Catches errors, terminates promise chain and calls errBack handler.
      *
      *
      * Example: Catch error
@@ -420,8 +426,8 @@ var task = require('microtask'); // nextTick shim
      * @return undefined 
      * @api public
      */
-    Promise.prototype.catch = function(error){
-	this.done(undefined,error);
+    Promise.prototype.catch = function(errBack){
+	this.done(undefined,errBack);
     };
     /**
      * Fulfills a promise with a `value`
@@ -569,12 +575,10 @@ var task = require('microtask'); // nextTick shim
      * @api public
      */
     Promise.prototype.progress = function(){
-        var notify, tuples = this._promise._chain;
+        var notify, chain = this._promise._chain;
 
-	if(!tuples) return;
-
-	for(var i = 0, l = tuples.length; i < l; i++){
-            if(typeof (notify = tuples[i][NOTIFY]) === 'function')
+	for(var i = 0, l = chain.length; i < l; i++){
+            if(typeof (notify = chain[i][2]) === 'function')
                 notify.apply(this,arguments);
         }
     };
@@ -649,7 +653,7 @@ var task = require('microtask'); // nextTick shim
      */
     Promise.prototype.callback = function(callback){
         return this.then(function(value,opaque){
-            return callback(null,value,opaque);
+            return callback(undefined,value,opaque);
         },function(reason,opaque){
 	    var error = reason;
 	    

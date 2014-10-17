@@ -1,6 +1,6 @@
 {
   "name": "micropromise",
-  "version": "0.4.4",
+  "version": "0.4.5",
   "description": "A+ promises",
   "implements": [
     "Promises/A+ 1.1.0"
