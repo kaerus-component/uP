@@ -12,7 +12,7 @@ var task = require('microtask'); // nextTick shim
 (function(root){
     "use strict";
 
-    try {root = global;} catch(e){ try {root = window;} catch(f){} }
+    try {root = window;} catch(e){ try {root = global;} catch(f){} }
 
     var slice = Array.prototype.slice,
         isArray = Array.isArray;

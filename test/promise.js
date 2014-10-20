@@ -1,13 +1,8 @@
-/*global Promise, describe, it*/
+/*global uPromise, describe, it*/
 
 var promise;
 
-try {
-    promise = require('micropromise');
-}
-catch (e) {
-    promise = require('..');
-}
+try{ promise = uPromise} catch(e) { promise = require('..'); }
 
 describe("Constructor",function(){
     it("should be a function", function(){
