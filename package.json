@@ -10,10 +10,10 @@
     "future",
     "promises-aplus"
   ],
-  "author": { 
-    "name": "Kaerus",
-    "email": "contact@kaerus.com",
-    "web": "http://kaerus.com"
+  "author": {
+    "name": "Anders Elo",
+    "email": "anders@kaerus.com",
+    "web": "http://www.kaerus.com"
   },
   "contributors": [
     "anders elo <anders@kaerus.com>"
@@ -22,9 +22,17 @@
     "microtask": "0.1.6"
   },
   "devDependencies": {
-    "promises-aplus-tests":"2.1.0",
-    "benchmark":">=1.0.0",
-    "test-support": "~0.3"
+    "promises-aplus-tests": "2.1.0",
+    "mocha": "*",
+    "chai": "*",
+    "should": "*",
+    "component": "~0.9.0",
+    "karma": "*",
+    "karma-mocha": "*",
+    "karma-chai": "*",
+    "karma-spec-reporter": "*",
+    "karma-firefox-launcher": "*",
+    "karma-commonjs": "0.0.12"
   },
   "bugs": {
     "url": "https://github.com/kaerus-component/uP/issues"
@@ -34,7 +42,7 @@
     "url": "git://github.com/kaerus-component/uP"
   },
   "scripts": {
-    "test":"make test"
+    "test": "make test"
   },
   "main": "index.js",
   "license": "APACHE2_0"

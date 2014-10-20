@@ -1,12 +1,23 @@
-test: test-nodejs
+KARMA = @./node_modules/karma/bin/karma
+MOCHA = @./node_modules/mocha/bin/mocha
+APLUS = @./node_modules/.bin/promises-aplus-tests
+COMPONENT = @./node_modules/.bin/component
 
-test-nodejs:
-	@echo "Running tests for nodejs"
-	@./node_modules/.bin/promises-aplus-tests ./test/adapter.js 
+test: build test-promise test-aplus
 
-test-phantomjs:
-	@echo "Running tests for phantomjs"
-	@./node_modules/mocha-phantomjs/bin/mocha-phantomjs test/runner.html
+build:
+	$(COMPONENT) build -n micropromise
+
+test-promise: test-node test-browser
+
+test-node:
+	$(MOCHA) --require should --reporter spec
+
+test-browser:
+	$(KARMA) start ./test/karma/karma.conf
+
+test-aplus:
+	$(APLUS) ./test/adapter.js 
 
 doc: 
 	@dox -a < index.js > doc
