@@ -2,7 +2,6 @@
 
 var promise;
 
-console.log("promise",promise);
 try {
     promise = require('micropromise');
 }

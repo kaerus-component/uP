@@ -32,6 +32,7 @@
     "karma-chai": "*",
     "karma-spec-reporter": "*",
     "karma-firefox-launcher": "*",
+    "karma-chrome-launcher": "*",
     "karma-commonjs": "0.0.12"
   },
   "bugs": {

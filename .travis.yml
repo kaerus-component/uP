@@ -1,9 +1,13 @@
 language: node_js
 node_js:
-  - 0.10.22
+  - 0.10
 
+matrix:
+  fast_finish: true
+  
 addons:
-  firefox: "32.0"
+  firefox: "stable"
+  chrome: "stable
 
 before_install:
   - export DISPLAY=:99.0
