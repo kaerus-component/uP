@@ -115,27 +115,39 @@ var task = require('microtask'); // nextTick shim
      * @throws {Error} not wrappable
      * @api public
      */
-    Promise.wrap = function(func){
+    Promise.wrap = function(Klass,inst){
         var p = new Promise();
 
-	if(!func) throw Error("Nothing to wrap!");
+	if(!Klass) throw Error("Nothing to wrap!");
 	
         return function(){
-            var args = slice.call(arguments), ret;
-
-            if(Promise.thenable(func) && typeof func.resolve === 'function'){
-		func.resolve(args).then(p.fulfill, p.reject, p.progress, p.timeout);
-            } else if(typeof func.constructor === 'function'){
-                try{
-                    ret = func.prototype.constructor.apply(p,args);
-                    p.resolve(ret);
-                } catch(err) {
-                    p.reject(err);
-                }
-            } else if(typeof func === 'function'){
+            var KC =  Klass.prototype.constructor,
+		args = slice.call(arguments),
+		ret;
+		
+	    
+            if(typeof KC === 'function'){
 		try {
-		    ret = func.apply(p,args);
+		    ret = KC.apply(inst,args);
+		    if(!(ret instanceof Klass)){
+			KC = function(){};
+			
+			KC.prototype = Klass.prototype;
+
+			inst = new KC();
+			
+			try {
+			    ret = Klass.apply(inst,args);
+			} catch (e){
+			    p.reject(e);
+			    return;
+			}
+			   
+			ret = Object(ret) === ret ? ret : inst;
+		    }
+		    
 		    p.resolve(ret);
+		    
 		} catch(err){
 		    p.reject(err);
 		}

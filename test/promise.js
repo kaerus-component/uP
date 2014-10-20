@@ -4,9 +4,20 @@ var uP;
 
 try{ uP = uPromise} catch(e) { uP = require('..'); }
 
+
 describe("Constructor",function(){
-    it("should be a function", function(){
+    it("should create a Promise", function(done){
 	uP.should.be.a.Function;
+
+	var p = new uP();
+	p.then.should.be.a.Function;
+
+	p.then(function(ok){
+	    ok.should.equal(123);
+	    done();
+	},done);
+
+	p.fulfill(123);
     });
 
     it("should be able to mixin",function(done){
@@ -82,7 +93,7 @@ describe("Promise.thenable",function(){
 
 	uP.thenable(o).should.equal(false);
 
-	uP.thenable({when:true}).should.equal(false);
+	uP.thenable({then:true}).should.equal(false);
     });
 });
 
@@ -174,11 +185,42 @@ describe("Promise defer",function(){
 
 
 describe("Promise wrap",function(){
-    it("a promise around a Class",function(done){
+    it("a promise around a Literal",function(done){
 	var a = uP.wrap(Array);
 
 	a(1,2,3).then(function(v){
 	    v.should.eql([1,2,3]);
+	}).callback(done);
+
+    });
+
+    it("a promise around a Class",function(done){
+	function MyClass(x,y){
+	 if(!(this instanceof MyClass))
+	     return new MyClass(x,y);
+	    
+	    this.x = x;
+	    this.y = y;
+	}
+
+	function MyOtherClass(z){
+	    this.z = z;
+	}
+	
+	var MyPromisedClass = uP.wrap(MyClass);
+	var MyOtherPromisedClass = uP.wrap(MyOtherClass);
+	
+	MyPromisedClass("hello","world").then(function(my){
+	    my.should.be.instanceof(MyClass);
+	    my.should.have.ownProperty('x','y');
+	    my.x.should.be.equal("hello");
+	    my.y.should.be.equal("world");
+	    
+	    return MyOtherPromisedClass(my);
+	}).then(function(other){
+	    other.should.be.instanceof(MyOtherClass);
+	    other.should.have.ownProperty('z');
+	    other.z.should.be.instanceof(MyClass);
 	}).callback(done);
 
     });
@@ -189,11 +231,13 @@ describe("Promise wrap",function(){
 	    this.y = y; // undefined reference
 	}
 	
-	var my = uP.wrap(MyClass);
+	var MyPromisedClass = uP.wrap(MyClass);
 
-	my("hello","world").catch(function(err){
+	MyPromisedClass("hello","world").catch(function(err){
 	    err.should.be.instanceof(ReferenceError);
 	    done();
 	});
     });
 });
+
+
