@@ -15,7 +15,7 @@ build-component:
 	$(COMPONENT) install
 	$(COMPONENT) build --standalone uPromise
 
-test: test-node test-aplus test-browser
+test: test-node test-browser
 
 test-node: build-nodejs
 	$(MOCHA) --require should --reporter spec
