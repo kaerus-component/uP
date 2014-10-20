@@ -55,10 +55,10 @@
   
   Example: wrap an Array
 ```js
-   p = Promise();
-   c = p.wrap(Array);
-   c(1,2,3); // => calls Array constructor and fulfills promise
-   p.resolved; // => [1,2,3]
+   p = Promise.wrap(Array);
+   
+   var r = c(1,2,3); // => calls Array constructor and returns fulfilled promise
+   r.valueOf(); // => [1,2,3];
 ```
 
 ## Promise.defer()
@@ -79,7 +79,7 @@
 
 ## Promise.async()
 
-  Make a synchronous nodejs function asynchrounous.
+  Make an asynchrounous funtion.
   
   Example: make readFile async
 ```js
