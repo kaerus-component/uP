@@ -32,8 +32,7 @@
     "karma-chai": "*",
     "karma-spec-reporter": "*",
     "karma-firefox-launcher": "*",
-    "karma-chrome-launcher": "*",
-    "karma-commonjs": "0.0.12"
+    "karma-chrome-launcher": "*"
   },
   "bugs": {
     "url": "https://github.com/kaerus-component/uP/issues"
