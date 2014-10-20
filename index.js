@@ -30,6 +30,8 @@ var task = require('microtask'); // nextTick shim
      * @api public
      */
     function Promise(p){
+	var self = this;
+	
         // object mixin
         if(p && typeof p === 'object'){
             for(var k in Promise.prototype)
@@ -47,7 +49,14 @@ var task = require('microtask'); // nextTick shim
 
         // resolver callback
         if(typeof p === 'function') {
-            p(this.resolve,this.reject,this.progress,this.timeout);
+	    task(function(){
+		var res = self.resolve.bind(self),
+		    rej = self.reject.bind(self),
+		    pro = self.progress.bind(self),
+		    tim = self.timeout.bind(self);
+		
+		p(res, rej, pro, tim);
+	    });
         }
     }
 
@@ -97,10 +106,10 @@ var task = require('microtask'); // nextTick shim
      * Wrap a promise around function or constructor
      *
      * Example: wrap an Array
-     *      p = Promise();
-     *      c = p.wrap(Array);
-     *      c(1,2,3); // => calls Array constructor and fulfills promise
-     *      p.resolved; // => [1,2,3]
+     *      p = Promise.wrap(Array);
+     *      
+     *      var r = c(1,2,3); // => calls Array constructor and returns fulfilled promise
+     *      r.valueOf(); // => [1,2,3]; 
      *
      * @return {Function} function to wrap
      * @throws {Error} not wrappable
@@ -118,7 +127,7 @@ var task = require('microtask'); // nextTick shim
 		func.resolve(args).then(p.fulfill, p.reject, p.progress, p.timeout);
             } else if(typeof func.constructor === 'function'){
                 try{
-                    ret = new func.constructor.apply(p,args);
+                    ret = func.prototype.constructor.apply(p,args);
                     p.resolve(ret);
                 } catch(err) {
                     p.reject(err);
@@ -175,7 +184,7 @@ var task = require('microtask'); // nextTick shim
 
     
     /**
-     * Make a synchronous nodejs function asynchrounous.
+     * Make an asynchrounous funtion.
      *
      * Example: make readFile async
      *      fs = require('fs');
@@ -189,20 +198,41 @@ var task = require('microtask'); // nextTick shim
      * @return {Object} promise
      * @api public
      */
-    Promise.async = function(func){
+    Promise.async = function(func,cb){
+	var p = new Promise(), called;
+
+	if(typeof func !=='function')
+	    throw new TypeError("func is not a function");
 	
-	var wrap = Promise.wrap(func);
-	
-	function callback(err,ret){ if(err) throw err; return ret; }
+	var cb = typeof cb === 'function' ? cb : function (err,ret){
+	    called = true;
+	    
+	    if(err) p.reject(err);
+	    else if(err === 0) p.progress(ret);
+	    else p.fulfill(ret);
+	};
 	
         return function(){
 	    var args = slice.call(arguments);
 
-	    args.push(callback);
+	    args.push(cb);
 
-	    task(wrap,args);
+	    task(function(){
+		var ret;
+		
+		try {
+		    ret = func.apply(null,args);
+		} catch(err) {
+		    cb(err);
+		}
+		
+		if(ret !==undefined && !called) {
+		    if(ret instanceof Error) cb(ret);
+		    else cb(undefined,ret);
+		}
+	    });
 	    
-	    return wrap; 
+	    return p;
 	};
     };
     
@@ -304,7 +334,7 @@ var task = require('microtask'); // nextTick shim
      * @api public
      */
     Promise.prototype.then = function(f,r,n){
-        var p = new this.constructor();
+        var p = new Promise();
 	  
 	this._promise._chain.push([p,f,r,n]);
 
