@@ -1,16 +1,16 @@
 /*global require, global, window */
 
 /**
- * Provides A+ v1.1 compliant promises.
+ * @provides A+ v1.1 compliant promises.
  * @module Promise
  * @name microPromise
  * @main Promise
  */
 
-var task = require('microtask'); // nextTick shim
-
 (function(root){
     "use strict";
+
+    var task = require('microtask'); // nextTick shim
 
     try {root = window;} catch(e){ try {root = global;} catch(f){} }
 
@@ -110,9 +110,10 @@ var task = require('microtask'); // nextTick shim
      *      
      *      var r = c(1,2,3); // => calls Array constructor and returns fulfilled promise
      *      r.valueOf(); // => [1,2,3]; 
-     *
+     * @param {Function} class - class to wrap
+     * @param {Object} [instance] - optional instance
      * @return {Function} function to wrap
-     * @throws {Error} not wrappable
+     * @throw {Error} on not wrappable
      * @api public
      */
     Promise.wrap = function(Klass,inst){
@@ -171,6 +172,8 @@ var task = require('microtask'); // nextTick shim
      *          console.log("Read error:", error);
      *      });
      *
+     * @param {Function} - task to defer
+     * @param {...} [args] - optional list of arguments
      * @return {Object} - returns a pending promise
      * @api public
      */
@@ -196,7 +199,7 @@ var task = require('microtask'); // nextTick shim
 
     
     /**
-     * Make an asynchrounous funtion.
+     * Make function asyncronous and fulfill/reject promise on execution.
      *
      * Example: make readFile async
      *      fs = require('fs');
@@ -207,6 +210,8 @@ var task = require('microtask'); // nextTick shim
      *          console.log("Read error:", error);
      *      });
      *
+     * @param {Function} function - function to make async
+     * @param {Function} [callback] - optional callback to call
      * @return {Object} promise
      * @api public
      */
@@ -216,7 +221,7 @@ var task = require('microtask'); // nextTick shim
 	if(typeof func !=='function')
 	    throw new TypeError("func is not a function");
 	
-	var cb = typeof cb === 'function' ? cb : function (err,ret){
+	cb = typeof cb === 'function' ? cb : function (err,ret){
 	    called = true;
 	    
 	    if(err) p.reject(err);
@@ -631,7 +636,6 @@ var task = require('microtask'); // nextTick shim
      *
      * Example: timeout & abort()
      *      var p = Promise();
-     *      p.attach({abort:function(msg){console.log('Aborted:',msg)}});
      *      p.timeout(5000);
      *      // ... after 5 secs ... => Aborted: |RangeError: 'exceeded timeout']
      *
@@ -641,7 +645,7 @@ var task = require('microtask'); // nextTick shim
      *
      * @param {Number} time - timeout value in ms or null to clear timeout
      * @param {Function} callback - optional timeout function callback
-     * @throws {RangeError} If exceeded timeout
+     * @throw {RangeError} If timeout exceeded 
      * @return {Object} promise
      * @api public
      */
@@ -766,7 +770,7 @@ var task = require('microtask'); // nextTick shim
         return u.then(function(){return y;});
     };
 
-    /* Resolver function, yields a promised value to handlers */
+    // Resolver function, yields a promised value to handlers
     function traverse(_promise){
 	var l, tuple = _promise._chain;
 	
