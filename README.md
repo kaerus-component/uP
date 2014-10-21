@@ -35,36 +35,36 @@
 
   Promise constructor
 
-  param Object[mixin] - Mixin promise into object
-  param Function[resolver] - Resolver function(resolve,reject,progress,timeout) 
-  return Object Promise
+  * param Object[mixin] - Mixin promise into object
+  * param Function[resolver] - Resolver function(resolve,reject,progress,timeout) 
+  * return Object Promise
 
   
 ## Promise.resolver([Promise|Object|Function]:Object, [resolver]:Function)
 
   Promise resolver
 
-  param Object[Promise|Object|Function] 
-  param Function[resolver] - Resolver function(resolve,reject,progress,timeout) 
-  return Object Promise
+  * param Object[Promise|Object|Function] 
+  * param Function[resolver] - Resolver function(resolve,reject,progress,timeout) 
+  * return Object Promise
 
   
 ## Promise.thenable(p:Object)
 
   Helper for identifying a promise-like objects or functions
 
-  param Objectp - Object or Function to test
-  return Boolean - Returns true if thenable or else false
+  * param Objectp - Object or Function to test
+  * return Boolean - Returns true if thenable or else false
 
   
 ## Promise.wrap(class:Function, [instance]:Object)
 
   Wrap a promise around function or constructor
 
-  param Functionclass - class to wrap
-  param Object[instance] - optional instance
-  return Function function to wrap
-  throw 
+  * param Functionclass - class to wrap
+  * param Object[instance] - optional instance
+  * return Function function to wrap
+  * throw 
 
   Example: wrap an Array
 ```js
@@ -79,9 +79,9 @@
   Deferres a task and returns a pending promise fulfilled with the return value from task.
   The task may also return a promise itself which to wait on.
 
-  param Function- task to defer
-  param ...[args] - optional list of arguments
-  return Object - returns a pending promise
+  * param Function- task to defer
+  * param ...[args] - optional list of arguments
+  * return Object - returns a pending promise
 
   Example: Make readFileSync async
 ```js
@@ -98,9 +98,9 @@
 
   Make function asyncronous and fulfill/reject promise on execution.
 
-  param Functionfunction - function to make async
-  param Function[callback] - optional callback to call
-  return Object promise
+  * param Functionfunction - function to make async
+  * param Function[callback] - optional callback to call
+  * return Object promise
 
   Example: make readFile async
 ```js
@@ -117,52 +117,52 @@
 
   Check if promise is pending
 
-  return Boolean - Returns true if pending or else false
+  * return Boolean - Returns true if pending or else false
 
   
 ## Promise.isFulfilled()
 
   Check if promise is fulfilled
 
-  return Boolean - Returns true if pending or else false
+  * return Boolean - Returns true if pending or else false
 
   
 ## Promise.isRejected()
 
   Check if promise is rejeced
 
-  return Boolean - Returns true if pending or else false
+  * return Boolean - Returns true if pending or else false
 
   
 ## Promise.hasResolved()
 
   Check if promise has resolved
 
-  return Boolean - Returns true if pending or else false
+  * return Boolean - Returns true if pending or else false
 
   
 ## Promise.valueOf()
 
   Get value if promise has been fulfilled
 
-  return Boolean - Returns true if pending or else false
+  * return Boolean - Returns true if pending or else false
 
   
 ## Promise.reason()
 
   Get reason if promise has rejected
 
-  return Boolean - Returns true if pending or else false
+  * return Boolean - Returns true if pending or else false
 
   
 ## Promise.then(onFulfill:Function, onReject:Function, onNotify:Function)
 
   Attaches callback,errback,notify handlers and returns a promise
 
-  param FunctiononFulfill callback
-  param FunctiononReject errback
-  param FunctiononNotify callback
-  return Object a decendant promise
+  * param FunctiononFulfill callback
+  * param FunctiononReject errback
+  * param FunctiononNotify callback
+  * return Object a decendant promise
 
   Example: catch fulfillment or rejection
 ```js
@@ -210,10 +210,10 @@
 
   Like `then` but spreads array into multiple arguments
 
-  param FunctiononFulfill callback
-  param FunctiononReject errback
-  param FunctiononNotify callback
-  return Object a decendant promise
+  * param FunctiononFulfill callback
+  * param FunctiononReject errback
+  * param FunctiononNotify callback
+  * return Object a decendant promise
 
   Example: Multiple fulfillment values
 ```js
@@ -228,9 +228,9 @@
 
   Terminates chain of promises, calls onerror or throws on unhandled Errors
 
-  param FunctiononFulfill callback
-  param FunctiononReject errback
-  param FunctiononNotify callback
+  * param FunctiononFulfill callback
+  * param FunctiononReject errback
+  * param FunctiononNotify callback
 
   Example: capture error with done
 ```js
@@ -268,15 +268,15 @@
 
   Terminates chain, invokes a callback or throws Error on error
 
-  param Functioncallback - Callback with value or Error object on error.
+  * param Functioncallback - Callback with value or Error object on error.
 
   
 ## Promise.catch(onError:Function)
 
   Catches errors, terminates promise chain and calls errBack handler.
 
-  param FunctiononError callback
-  return undefined 
+  * param FunctiononError callback
+  * return undefined 
 
   Example: Catch error
 ```js
@@ -296,8 +296,8 @@
 
   Fulfills a promise with a `value`
 
-  param Objectvalue 
-  return Object promise
+  * param Objectvalue 
+  * return Object promise
 
   Example: fulfillment
 ```js
@@ -331,8 +331,8 @@
 
   Rejects promise with a `reason`
 
-  param Objectreason 
-  return Object promise
+  * param Objectreason 
+  * return Object promise
 
   Example:
 ```js
@@ -349,8 +349,8 @@
 
   Resolves a promise and performs unwrapping if necessary
 
-  param Objectvalue - Promise or literal
-  return Object promise
+  * param Objectvalue - Promise or literal
+  * return Object promise
 
   Example: resolve a literal
 ```js
@@ -371,7 +371,7 @@
 
   Notifies attached handlers
 
-  param Objectarguments 
+  * param Objectarguments 
 
   Example:
 ```js
@@ -392,10 +392,10 @@
   Timeout a pending promise and invoke callback function on timeout.
   Without a callback it throws a RangeError('exceeded timeout').
 
-  param Numbertime - timeout value in ms or null to clear timeout
-  param Functioncallback - optional timeout function callback
-  throw 
-  return Object promise
+  * param Numbertime - timeout value in ms or null to clear timeout
+  * param Functioncallback - optional timeout function callback
+  * throw 
+  * return Object promise
 
   Example: timeout & abort()
 ```js
@@ -416,8 +416,8 @@
   Resolves promise to a nodejs styled callback function(err,ret) 
   and passes the callbacks return value down the chain.
 
-  param Functioncallback - Callback function
-  return Object promise
+  * param Functioncallback - Callback function
+  * return Object promise
 
   Example:
 ```js
@@ -451,8 +451,8 @@
   Joins promises and collects results into an array.
   If any of the promises are rejected the chain is also rejected.
 
-  param Arraypromises 
-  return Object promise
+  * param Arraypromises 
+  * return Object promise
 
   Example: join with two promises
 ```js
