@@ -47,41 +47,46 @@
 
 	this._promise = {_chain: []};
 
-        // resolver callback
+        // use resolver callback
         if(typeof p === 'function') {
-	    task(function(){
-		var res = self.resolve.bind(self),
-		    rej = self.reject.bind(self),
-		    pro = self.progress.bind(self),
-		    tim = self.timeout.bind(self);
-		
-		p(res, rej, pro, tim);
-	    });
+	    Promise.resolver.call(self,p);
         }
     }
 
     /**
      * Promise resolver
      * 
-     * @param {Object} [Promise|Object|Function]  
-     * @param {Function} [resolver] - Resolver function(resolve,reject,progress,timeout) 
+     * @param {Function} resolver - resolver function(fulfill,reject,progress,timeout)  
      * @return {Object} Promise
      * @api public
      */
-    Promise.resolver = function(p,r){
+    Promise.resolver = function(res){
+	var promise = this instanceof Promise ? this : new Promise();
+	
+	function f(v,o){
+	    promise.fulfill(v,o);
+	}
 
-	if(typeof r === 'function') {
-	    
-	    if(Promise.thenable(p)){
-		return r(p.resolve,p.reject,p.progress,p.timeout);
-	    }
-	    else if(p) {
-		return Promise.resolver(Promise(p),r);
-	    }
-	    else return new Promise(r);
+	function r(v,o){
+	    promise.reject(v,o);
+	}
+
+	function p(v,o){
+	    promise.progress(v,o);
+	}
+
+	function t(v,o){
+	    promise.timeout(v,o);
 	}
 	
-	return new Promise(p);
+	if(typeof res === 'function') {
+	    task(function(){
+		res(f,r,p,t);
+	    });
+	}
+	else throw new Error("no resolver");
+	
+	return promise;
     };
 
     
@@ -351,11 +356,11 @@
      * @api public
      */
     Promise.prototype.then = function(f,r,n){
-        var p = new Promise();
+        var p = new Promise(), self = this._promise;
 	  
-	this._promise._chain.push([p,f,r,n]);
+	self._chain[self._chain.length] = [p,f,r,n];
 
-	if(this._promise._state) task(traverse,[this._promise]);
+	if(self._state) task(traverse,[self]);
 
         return p;
     };
@@ -505,13 +510,14 @@
      * @api public
      */
     Promise.prototype.fulfill = function(value,opaque){
-
-	if(!this._promise._state) {
-	    this._promise._state = FULFILLED;
-	    this._promise._value = value;
-	    this._promise._opaque = opaque;
+	var self = this._promise;
+	
+	if(!self._state) {
+	    self._state = FULFILLED;
+	    self._value = value;
+	    self._opaque = opaque;
 	    
-	    task(traverse,[this._promise]);
+	    task(traverse,[self]);
 	}
 	
         return this;
@@ -535,13 +541,14 @@
      * @api public
      */
     Promise.prototype.reject = function(reason,opaque){
+	var self = this._promise;
 	
-	if(!this._promise._state){
-	    this._promise._state = REJECTED;
-	    this._promise._value = reason;
-	    this._promise._opaque = opaque;
+	if(!self._state){
+	    self._state = REJECTED;
+	    self._value = reason;
+	    self._opaque = opaque;
 	    
-	    task(traverse,[this._promise]);
+	    task(traverse,[self]);
 	}
 	
         return this;
@@ -566,9 +573,9 @@
      * @api public
      */
     Promise.prototype.resolve = function(x,o){
-        var then, z, p = this;
+        var then, z = 0, self = this._promise, p = this;
 
-        if(!this._promise._state){
+        if(!self._state){
             if(x === p) p.reject(new TypeError("Promise cannot resolve itself!"));
 
             if(x && (typeof x === 'object' || typeof x === 'function')){
@@ -576,24 +583,24 @@
             }
 
             if(typeof then !== 'function'){
-		this.fulfill(x,o);
+		p.fulfill(x,o);
             } else if(!z){
                 try {
                     then.apply(x,[function(y){
                         if(!z) {
                             p.resolve(y,o);
-                            z = true;
+                            z = 1;
                         }
                     },function(r){
                         if(!z) {
                             p.reject(r);
-                            z = true;
+                            z = 1;
                         }
                     }]);
                 } catch(e) {
                     if(!z) {
 			p.reject(e);
-			z = true;
+			z = 1;
                     }
                 }
             }
@@ -650,20 +657,20 @@
      * @api public
      */
     Promise.prototype.timeout = function(msec,func){
-        var p = this;
+        var p = this, self = this._promise;
 
         if(msec === null) {
-            if(this._promise._timeout)
-		root.clearTimeout(this._promise._timeout);
+            if(self._timeout)
+		root.clearTimeout(self._timeout);
 	    
-            this._promise._timeout = null;
-        } else if(!this._promise._timeout){
-            this._promise._timeout = root.setTimeout(onTimeout,msec);
+            self._timeout = null;
+        } else if(!self._timeout){
+            self._timeout = root.setTimeout(onTimeout,msec);
         }
 
         function onTimeout(){
             var e = new RangeError("exceeded timeout");
-            if(!this._promise._state) {
+            if(!self._state) {
                 if(typeof func === 'function') func(p);
                 else if(typeof p.onerror === 'function') p.onerror(e);
                 else throw e;

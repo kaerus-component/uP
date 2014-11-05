@@ -7,7 +7,7 @@
 # microPromise(uP) - A+ v1.1 compliant promises
 
   - [Promise()](#promisemixinobjectresolverfunction)
-  - [Promise.resolver()](#promiseresolverpromiseobjectfunctionobjectresolverfunction)
+  - [Promise.resolver()](#promiseresolverresolverfunction)
   - [Promise.thenable()](#promisethenablepobject)
   - [Promise.wrap()](#promisewrapclassfunctioninstanceobject)
   - [Promise.defer()](#promisedeferfunctionargs)
@@ -40,12 +40,11 @@
   * return Object Promise
 
   
-## Promise.resolver([Promise|Object|Function]:Object, [resolver]:Function)
+## Promise.resolver(resolver:Function)
 
   Promise resolver
 
-  * param Object [Promise|Object|Function] 
-  * param Function [resolver] - Resolver function(resolve,reject,progress,timeout) 
+  * param Function resolver - resolver function(fulfill,reject,progress,timeout) 
   * return Object Promise
 
   

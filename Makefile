@@ -15,13 +15,18 @@ components:
 	$(COMPONENT) install
 	$(COMPONENT) build --standalone uPromise
 
+.PHONY: test-component
+test-component: components
+	@echo "Building test-component"
+	$(COMPONENT) build -d --standalone uPromise -n test
+
 test: build test-node test-browser
 
 test-node: node_modules
 	$(APLUS) ./test/adapter.js
 	$(MOCHA) --require should --reporter spec
 
-test-browser: components
+test-browser: test-component
 	$(KARMA) start ./test/karma/karma.conf
 
 doc: 
