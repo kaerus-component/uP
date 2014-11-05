@@ -768,7 +768,7 @@
 		p._promise._value = v;
 		p._promise._opaque = o;
 		
-		traverse(p._promise);
+		task(traverse,[p._promise]);
             }
         }
     }
