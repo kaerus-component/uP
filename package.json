@@ -1,6 +1,6 @@
 {
   "name": "micropromise",
-  "version": "0.4.9",
+  "version": "0.4.10",
   "description": "A+ promises",
   "implements": [
     "Promises/A+ 1.1.0"
@@ -19,7 +19,7 @@
     "anders elo <anders@kaerus.com>"
   ],
   "dependencies": {
-    "microtask": "0.1.8"
+    "microtask": "0.1.9"
   },
   "devDependencies": {
     "promises-aplus-tests": "2.1.0",
