@@ -71,9 +71,6 @@ describe("Class methods",function(){
 	uP.wrap.should.be.Function;
     });
 
-    it("should have resolver()",function(){
-	uP.resolver.should.be.Function;
-    });
 })
 
 describe("Promise.thenable",function(){

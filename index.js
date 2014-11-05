@@ -25,69 +25,37 @@
      * Promise constructor
      * 
      * @param {Object} [mixin] - Mixin promise into object
-     * @param {Function} [resolver] - Resolver function(resolve,reject,progress,timeout) 
+     * @param {Function} [resolver] - Resolver function(resolve,reject) 
      * @return {Object} Promise
      * @api public
      */
-    function Promise(p){
+    function Promise(o){
 	var self = this;
 	
         // object mixin
-        if(p && typeof p === 'object'){
+        if(o && typeof o === 'object'){
             for(var k in Promise.prototype)
-		p[k] = Promise.prototype[k];
-	    p._promise = {_chain:[]};
+		o[k] = Promise.prototype[k];
+	    o._promise = {_chain:[]};
 
-	    return p;
+	    return o;
         }
 	
 	// create new instance
         if(!(this instanceof Promise))
-            return new Promise(p);
+            return new Promise(o);
 
 	this._promise = {_chain: []};
 
         // use resolver callback
-        if(typeof p === 'function') {
-	    Promise.resolver.call(self,p);
+        if(typeof o === 'function') {
+	    task(function(){
+		var res = self.resolve.bind(self),
+		    rej = self.reject.bind(self);
+		o(res,rej);
+	    });
         }
     }
-
-    /**
-     * Promise resolver
-     * 
-     * @param {Function} resolver - resolver function(fulfill,reject,progress,timeout)  
-     * @return {Object} Promise
-     * @api public
-     */
-    Promise.resolver = function(res){
-	var promise = this instanceof Promise ? this : new Promise();
-	
-	function f(v,o){
-	    promise.fulfill(v,o);
-	}
-
-	function r(v,o){
-	    promise.reject(v,o);
-	}
-
-	function p(v,o){
-	    promise.progress(v,o);
-	}
-
-	function t(v,o){
-	    promise.timeout(v,o);
-	}
-	
-	if(typeof res === 'function') {
-	    task(function(){
-		res(f,r,p,t);
-	    });
-	}
-	else throw new Error("no resolver");
-	
-	return promise;
-    };
 
     
     /**
@@ -130,7 +98,7 @@
             var KC =  Klass.prototype.constructor,
 		args = slice.call(arguments),
 		ret;
-		
+	    
 	    
             if(typeof KC === 'function'){
 		try {
@@ -148,7 +116,7 @@
 			    p.reject(e);
 			    return;
 			}
-			   
+			
 			ret = Object(ret) === ret ? ret : inst;
 		    }
 		    
@@ -357,7 +325,7 @@
      */
     Promise.prototype.then = function(f,r,n){
         var p = new Promise(), self = this._promise;
-	  
+	
 	self._chain[self._chain.length] = [p,f,r,n];
 
 	if(self._state) task(traverse,[self]);
@@ -512,12 +480,9 @@
     Promise.prototype.fulfill = function(value,opaque){
 	var self = this._promise;
 	
-	if(!self._state) {
-	    self._state = FULFILLED;
-	    self._value = value;
-	    self._opaque = opaque;
-	    
-	    task(traverse,[self]);
+	if(self._state === undefined) {
+	    self._state = PENDING;
+	    task(traverse,[self,FULFILLED,value,opaque]);
 	}
 	
         return this;
@@ -543,12 +508,9 @@
     Promise.prototype.reject = function(reason,opaque){
 	var self = this._promise;
 	
-	if(!self._state){
-	    self._state = REJECTED;
-	    self._value = reason;
-	    self._opaque = opaque;
-	    
-	    task(traverse,[self]);
+	if(self._state === undefined){
+	    self._state = PENDING;
+	    task(traverse,[self,REJECTED,reason,opaque]);
 	}
 	
         return this;
@@ -778,30 +740,35 @@
     };
 
     // Resolver function, yields a promised value to handlers
-    function traverse(_promise){
-	var l, tuple = _promise._chain;
-	
-	if(!tuple.length) return;
+    function traverse(_promise, state, value, opaque){
+	var t, p, h, r;
+	var chain = _promise._chain;
 
-	var t,p,h,v = _promise._value;
+	if(state) {
+	    _promise._state = state;
+	    _promise._value = value;
+	    _promise._opaque = opaque;
+	} else {
+	    state = _promise._state;
+	    value = _promise._value;
+	    opaque = _promise._opaque;
+	}
 	
-        while((t = tuple.shift())) {
+	if(!chain.length) return;
+	
+        while((t = chain.shift())){
 	    p = t[0];
-            h = t[_promise._state];
+            h = t[state];
 
             if(typeof h === 'function') {
                 try {
-                    v = h(_promise._value,_promise._opaque);
-		    p.resolve(v,_promise._opaque);
+                    r = h(value,opaque);
+		    p.resolve(r,opaque);
                 } catch(e) {
 		    p.reject(e);
                 }
             } else {
-		p._promise._state = _promise._state;
-		p._promise._value = v;
-		p._promise._opaque = _promise._opaque;
-		
-		task(traverse,[p._promise]);
+		traverse(p._promise, state, value, opaque);
             }
         }
     }
