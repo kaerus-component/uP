@@ -480,9 +480,11 @@
     Promise.prototype.fulfill = function(value,opaque){
 	var self = this._promise;
 	
-	if(self._state === undefined) {
-	    self._state = PENDING;
-	    task(traverse,[self,FULFILLED,value,opaque]);
+	if(!self._state) {
+	    self._state = FULFILLED;
+	    self._value = value;
+	    self._opaque = opaque;
+	    task(traverse,[self]);
 	}
 	
         return this;
@@ -509,7 +511,10 @@
 	var self = this._promise;
 	
 	if(self._state === undefined){
-	    self._state = PENDING;
+	    self._state = REJECTED;
+	    self._value = reason;
+	    self._opaque = opaque;
+	    
 	    task(traverse,[self,REJECTED,reason,opaque]);
 	}
 	
@@ -740,35 +745,30 @@
     };
 
     // Resolver function, yields a promised value to handlers
-    function traverse(_promise, state, value, opaque){
-	var t, p, h, r;
-	var chain = _promise._chain;
-
-	if(state) {
-	    _promise._state = state;
-	    _promise._value = value;
-	    _promise._opaque = opaque;
-	} else {
-	    state = _promise._state;
-	    value = _promise._value;
-	    opaque = _promise._opaque;
-	}
+    function traverse(_promise){
+	var c = _promise._chain,
+	    s = _promise._state,
+	    v = _promise._value,
+	    o = _promise._opaque,
+	    t, p, h, r;
 	
-	if(!chain.length) return;
-	
-        while((t = chain.shift())){
+        while((t = c.shift())){
 	    p = t[0];
-            h = t[state];
+            h = t[s];
 
             if(typeof h === 'function') {
                 try {
-                    r = h(value,opaque);
-		    p.resolve(r,opaque);
+                    r = h(v,o);
+		    p.resolve(r,o);
                 } catch(e) {
 		    p.reject(e);
                 }
             } else {
-		traverse(p._promise, state, value, opaque);
+		p._promise._state = s;
+		p._promise._value = v;
+		p._promise._opaque = o;
+		
+		traverse(p._promise);
             }
         }
     }
